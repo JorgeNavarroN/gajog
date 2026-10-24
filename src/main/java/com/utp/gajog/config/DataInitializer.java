@@ -66,35 +66,52 @@ public class DataInitializer {
 
             // 4. Instructor inicial por defecto
             if (instructorRepo.count() == 0) {
-                Persona pInstructor = new Persona();
-                pInstructor.setDni("10000001");
-                pInstructor.setNombres("Sabonim Carlos");
-                pInstructor.setApellidos("Mendoza");
-                pInstructor.setTelefono("999888777");
-                pInstructor = personaRepo.save(pInstructor);
 
-                Instructor ins = new Instructor();
-                ins.setPersona(pInstructor);
-                instructorRepo.save(ins);
+                Persona pInstructor = personaRepo
+                        .findByDni("10000001")
+                        .orElseGet(() -> {
+                            Persona nueva = new Persona();
+                            nueva.setDni("10000001");
+                            nueva.setNombres("Sabonim Carlos");
+                            nueva.setApellidos("Mendoza");
+                            nueva.setTelefono("999888777");
+
+                            return personaRepo.save(nueva);
+                        });
+
+                Instructor instructor = new Instructor();
+                instructor.setPersona(pInstructor);
+
+                instructorRepo.save(instructor);
             }
 
             // 5. Usuario Administrador por defecto
-            if (usuarioRepository.count() == 0) {
-                Persona pAdmin = new Persona();
-                pAdmin.setDni("00000000");
-                pAdmin.setNombres("Administrador");
-                pAdmin.setApellidos("General");
-                pAdmin = personaRepo.save(pAdmin);
+            if (!usuarioRepository.existsByNombreUsuario("admin")) {
 
-                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+                Persona pAdmin = personaRepo
+                        .findByDni("00000000")
+                        .orElseGet(() -> {
+                            Persona nueva = new Persona();
+                            nueva.setDni("00000000");
+                            nueva.setNombres("Administrador");
+                            nueva.setApellidos("General");
+
+                            return personaRepo.save(nueva);
+                        });
+
+                BCryptPasswordEncoder encoder
+                        = new BCryptPasswordEncoder();
+
                 Usuario admin = new Usuario(
                         pAdmin,
                         "admin",
                         encoder.encode("admin123"),
                         RolUsuario.ADMINISTRADOR
                 );
+
                 usuarioRepository.save(admin);
             }
+
         };
     }
 
