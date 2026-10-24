@@ -1,6 +1,7 @@
 package com.utp.gajog.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
@@ -11,46 +12,42 @@ public class Usuario {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "persona_id",
-            nullable = false,
-            unique = true
-    )
+    @JoinColumn(name = "persona_id", nullable = false, unique = true)
     private Persona persona;
 
-    @Column(
-            name = "usuario",
-            nullable = false,
-            unique = true,
-            length = 50
-    )
+    @Column(name = "usuario", nullable = false, unique = true, length = 50)
     private String nombreUsuario;
 
-    @Column(
-            name = "password_hash",
-            nullable = false,
-            length = 255
-    )
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private RolUsuario rol;
 
+    @Column(nullable = false)
+    private Boolean activo = true;
+
+    @Column(name = "requiere_cambio_password", nullable = false)
+    private Boolean requiereCambioPassword = false;
+
+    @Column(name = "intentos_fallidos", nullable = false)
+    private Integer intentosFallidos = 0;
+
+    @Column(name = "bloqueado_hasta")
+    private LocalDateTime bloqueadoHasta;
+
     protected Usuario() {
-        // Requerido por JPA
     }
 
-    public Usuario(
-            Persona persona,
-            String nombreUsuario,
-            String passwordHash,
-            RolUsuario rol
-    ) {
+    public Usuario(Persona persona, String nombreUsuario, String passwordHash, RolUsuario rol) {
         this.persona = persona;
         this.nombreUsuario = nombreUsuario;
         this.passwordHash = passwordHash;
         this.rol = rol;
+        this.activo = true;
+        this.requiereCambioPassword = false;
+        this.intentosFallidos = 0;
     }
 
     public Long getId() {
@@ -87,5 +84,37 @@ public class Usuario {
 
     public void setRol(RolUsuario rol) {
         this.rol = rol;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+    public Boolean getRequiereCambioPassword() {
+        return requiereCambioPassword;
+    }
+
+    public void setRequiereCambioPassword(Boolean requiereCambioPassword) {
+        this.requiereCambioPassword = requiereCambioPassword;
+    }
+
+    public Integer getIntentosFallidos() {
+        return intentosFallidos;
+    }
+
+    public void setIntentosFallidos(Integer intentosFallidos) {
+        this.intentosFallidos = intentosFallidos;
+    }
+
+    public LocalDateTime getBloqueadoHasta() {
+        return bloqueadoHasta;
+    }
+
+    public void setBloqueadoHasta(LocalDateTime bloqueadoHasta) {
+        this.bloqueadoHasta = bloqueadoHasta;
     }
 }

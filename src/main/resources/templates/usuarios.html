@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Usuarios y Auditoría')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('usuarios')}"></aside>
+
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Usuarios y Auditoría')}"></header>
+
+        <main class="gajog-content">
+            <div th:replace="~{fragments/ui :: pageHeader('SEGURIDAD Y CONTROL INTERNO', 'Usuarios y auditoría', 'Administra las cuentas del personal por rol y supervisa el registro de acciones sensibles.')}"></div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header fw-bold">Crear nuevo usuario</div>
+                        <div class="card-body">
+                            <form th:action="@{/usuarios/guardar}" method="post">
+                                <div class="mb-2">
+                                    <label for="dniUsu" class="form-label">DNI (8 dígitos) *</label>
+                                    <input id="dniUsu" type="text" name="dni" class="form-control" pattern="\d{8}" maxlength="8" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="nomUsu" class="form-label">Nombres *</label>
+                                    <input id="nomUsu" type="text" name="nombres" class="form-control" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="apeUsu" class="form-label">Apellidos *</label>
+                                    <input id="apeUsu" type="text" name="apellidos" class="form-control" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="userUsu" class="form-label">Nombre de usuario *</label>
+                                    <input id="userUsu" type="text" name="username" class="form-control" minlength="4" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="passUsu" class="form-label">Contraseña inicial (mín. 8, letra y número) *</label>
+                                    <input id="passUsu" type="password" name="passwordInicial" class="form-control" minlength="8" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="rolUsu" class="form-label">Rol asignado *</label>
+                                    <select id="rolUsu" name="rol" class="form-select" required>
+                                        <option th:each="r : ${roles}" th:value="${r}" th:text="${r}"></option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-gajog-primary w-100">Crear usuario &rarr;</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-header fw-bold">Cuentas del sistema</div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Personal</th>
+                                        <th>Rol</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="u : ${usuarios}">
+                                        <td>
+                                            <strong th:text="${u.nombreUsuario}"></strong>
+                                            <div th:if="${u.requiereCambioPassword}" class="small text-warning">Cambio de clave pendiente</div>
+                                        </td>
+                                        <td th:text="${u.persona.nombres + ' ' + u.persona.apellidos + ' (' + u.persona.dni + ')'}"></td>
+                                        <td>
+                                            <form th:action="@{/usuarios/{id}/rol(id=${u.id})}" method="post" class="d-inline-flex gap-1">
+                                                <select name="nuevoRol" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                                                    <option th:each="r : ${roles}" th:value="${r}" th:text="${r}" th:selected="${r == u.rol}"></option>
+                                                </select>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <span th:replace="~{fragments/ui :: statusBadge(${u.activo ? 'Activo' : 'Inactivo'}, ${u.activo ? 'success' : 'danger'})}"></span>
+                                        </td>
+                                        <td class="text-end">
+                                            <form th:action="@{/usuarios/{id}/estado(id=${u.id})}" method="post" class="d-inline">
+                                                <input type="hidden" name="activo" th:value="${!u.activo}">
+                                                <button type="submit" class="btn btn-sm"
+                                                        th:classappend="${u.activo ? 'btn-outline-warning' : 'btn-outline-success'}"
+                                                        th:text="${u.activo ? 'Desactivar' : 'Activar / Desbloquear'}"></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Bitácora de Auditoría de Acciones Sensibles -->
+                    <div class="card">
+                        <div class="card-header fw-bold">🛡️ Registro de auditoría de acciones sensibles</div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha y hora</th>
+                                        <th>Usuario</th>
+                                        <th>Acción</th>
+                                        <th>Entidad</th>
+                                        <th>Detalle</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="ev : ${eventosAuditoria}">
+                                        <td class="small" th:text="${#temporals.format(ev.fechaHora, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                                        <td class="fw-semibold" th:text="${ev.usuario}"></td>
+                                        <td><span class="badge bg-secondary" th:text="${ev.accion}"></span></td>
+                                        <td class="small" th:text="${ev.entidad + (ev.entidadId != null ? ' #' + ev.entidadId : '')}"></td>
+                                        <td class="small text-muted" th:text="${ev.detalle}"></td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(eventosAuditoria)}">
+                                        <td colspan="5" class="text-center text-muted py-3 small">Sin eventos de auditoría registrados aún.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

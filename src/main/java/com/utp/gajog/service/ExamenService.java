@@ -1,5 +1,7 @@
 package com.utp.gajog.service;
 
+import com.utp.gajog.exception.RecursoNoEncontradoException;
+import com.utp.gajog.exception.ReglaNegocioException;
 import com.utp.gajog.model.*;
 import com.utp.gajog.repository.*;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class ExamenService {
     private final AlumnoRepository alumnoRepository;
     private final CinturonRepository cinturonRepository;
     private final HistorialCinturonesRepository historialCinturonesRepository;
+    private final AuditoriaService auditoriaService;
 
     public ExamenService(
             ExamenRepository examenRepository,
@@ -25,7 +28,8 @@ public class ExamenService {
             DetalleExamenRepository detalleExamenRepository,
             AlumnoRepository alumnoRepository,
             CinturonRepository cinturonRepository,
-            HistorialCinturonesRepository historialCinturonesRepository
+            HistorialCinturonesRepository historialCinturonesRepository,
+            AuditoriaService auditoriaService
     ) {
         this.examenRepository = examenRepository;
         this.criterioExamenRepository = criterioExamenRepository;
@@ -33,19 +37,20 @@ public class ExamenService {
         this.alumnoRepository = alumnoRepository;
         this.cinturonRepository = cinturonRepository;
         this.historialCinturonesRepository = historialCinturonesRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
     public Examen programarExamen(Long alumnoId, Long cinturonObjetivoId, LocalDate fechaExamen) {
-        Alumno alumno = alumnoRepository.findById(alumnoId)
-                .orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+        Alumno alumno = alumnoRepository.findByIdConDetalle(alumnoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Alumno no encontrado"));
 
         Cinturon cinturonObjetivo = cinturonRepository.findById(cinturonObjetivoId)
-                .orElseThrow(() -> new IllegalArgumentException("Cinturón objetivo no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cinturón objetivo no encontrado"));
 
         if (alumno.getCinturonActual() != null
                 && cinturonObjetivo.getOrden() <= alumno.getCinturonActual().getOrden()) {
-            throw new IllegalArgumentException("El cinturón objetivo debe ser superior al cinturón actual del alumno");
+            throw new ReglaNegocioException("El cinturón objetivo debe ser superior al cinturón actual del alumno");
         }
 
         Examen examen = new Examen();
@@ -60,18 +65,18 @@ public class ExamenService {
 
     @Transactional
     public DetalleExamen calificarCriterio(Long examenId, Long criterioId, BigDecimal puntaje, String observacion) {
-        Examen examen = examenRepository.findById(examenId)
-                .orElseThrow(() -> new IllegalArgumentException("Examen no encontrado"));
+        Examen examen = examenRepository.findByIdConDetalle(examenId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Examen no encontrado"));
 
         if (examen.getResultado() != ResultadoExamen.PENDIENTE) {
-            throw new IllegalStateException("El examen ya fue cerrado y no admite más modificaciones");
+            throw new ReglaNegocioException("El examen ya fue cerrado y no admite más modificaciones");
         }
 
         CriterioExamen criterio = criterioExamenRepository.findById(criterioId)
-                .orElseThrow(() -> new IllegalArgumentException("Criterio de evaluación no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Criterio de evaluación no encontrado"));
 
         if (puntaje.compareTo(BigDecimal.ZERO) < 0 || puntaje.compareTo(criterio.getPuntajeMaximo()) > 0) {
-            throw new IllegalArgumentException(
+            throw new ReglaNegocioException(
                     "El puntaje para " + criterio.getNombre() + " debe estar entre 0 y " + criterio.getPuntajeMaximo()
             );
         }
@@ -87,21 +92,21 @@ public class ExamenService {
 
     @Transactional
     public Examen finalizarEvaluacion(Long examenId, BigDecimal puntajeMinimoAprobatorio) {
-        Examen examen = examenRepository.findById(examenId)
-                .orElseThrow(() -> new IllegalArgumentException("Examen no encontrado"));
+        Examen examen = examenRepository.findByIdConDetalle(examenId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Examen no encontrado"));
 
         if (examen.getResultado() != ResultadoExamen.PENDIENTE) {
-            throw new IllegalStateException("Este examen ya fue evaluado anteriormente");
+            throw new ReglaNegocioException("Este examen ya fue evaluado anteriormente");
         }
 
         List<DetalleExamen> detalles = detalleExamenRepository.findByExamenId(examenId);
         if (detalles.isEmpty()) {
-            throw new IllegalStateException("No se han registrado calificaciones en el detalle del examen");
+            throw new ReglaNegocioException("No se han registrado calificaciones en el detalle del examen");
         }
 
         BigDecimal sumaTotal = detalles.stream()
-        .map(d -> d.getPuntaje() != null ? d.getPuntaje() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+                .map(d -> d.getPuntaje() != null ? d.getPuntaje() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         examen.setPuntajeTotal(sumaTotal);
 
@@ -118,6 +123,13 @@ public class ExamenService {
             historial.setExamen(examen);
             historial.setFechaObtencion(examen.getFechaExamen());
             historialCinturonesRepository.save(historial);
+
+            auditoriaService.registrarEvento(
+                    "EXAMEN_APROBADO",
+                    "Examen",
+                    examen.getId(),
+                    "Alumno ID " + alumno.getId() + " ascendió a " + examen.getCinturonObjetivo().getNombre() + " con " + sumaTotal + " pts"
+            );
         } else {
             examen.setResultado(ResultadoExamen.REPROBADO);
         }
@@ -141,7 +153,31 @@ public class ExamenService {
     }
 
     @Transactional(readOnly = true)
+    public List<Examen> listarTodosConDetalle() {
+        return examenRepository.findAllConAlumnoYCinturon();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CriterioExamen> listarCriterios() {
+        return criterioExamenRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
     public List<Examen> listarPorAlumno(Long alumnoId) {
         return examenRepository.findByAlumnoIdOrderByFechaExamenDesc(alumnoId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Examen> buscarConFiltros(com.utp.gajog.dto.FiltroExamenDTO filtro) {
+        if (filtro == null) {
+            return examenRepository.findAllConAlumnoYCinturon();
+        }
+        return examenRepository.buscarExamenesFiltrados(
+                filtro.q(),
+                filtro.cinturonObjetivoId(),
+                filtro.resultado(),
+                filtro.desde(),
+                filtro.hasta()
+        );
     }
 }

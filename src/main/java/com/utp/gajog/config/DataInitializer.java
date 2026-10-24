@@ -5,9 +5,11 @@ import com.utp.gajog.repository.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -22,10 +24,12 @@ public class DataInitializer {
             CriterioExamenRepository criterioRepo,
             InstructorRepository instructorRepo,
             PersonaRepository personaRepo,
-            UsuarioRepository usuarioRepository
+            UsuarioRepository usuarioRepository,
+            TarifaRepository tarifaRepository,
+            PasswordEncoder passwordEncoder,
+            Clock clock
     ) {
         return args -> {
-            // 1. Cinturones iniciales
             if (cinturonRepo.count() == 0) {
                 cinturonRepo.saveAll(List.of(
                         crearCinturon("Blanco (10° Gup)", "BLANCO", 1),
@@ -37,7 +41,25 @@ public class DataInitializer {
                 ));
             }
 
-            // 2. Categorías y Horarios iniciales
+            Instructor instructorPorDefecto;
+            if (instructorRepo.count() == 0) {
+                Persona pInstructor = personaRepo.findByDni("10000001").orElseGet(() -> {
+                    Persona nueva = new Persona();
+                    nueva.setDni("10000001");
+                    nueva.setNombres("Sabonim Carlos");
+                    nueva.setApellidos("Mendoza");
+                    nueva.setTelefono("999888777");
+                    nueva.setCorreo("carlos.mendoza@gajogtkd.com");
+                    return personaRepo.save(nueva);
+                });
+
+                Instructor ins = new Instructor();
+                ins.setPersona(pInstructor);
+                instructorPorDefecto = instructorRepo.save(ins);
+            } else {
+                instructorPorDefecto = instructorRepo.findAllConPersona().getFirst();
+            }
+
             if (categoriaRepo.count() == 0) {
                 Categoria infantil = crearCategoria("Infantil", 5, 11);
                 Categoria juvenil = crearCategoria("Juvenil", 12, 17);
@@ -45,16 +67,32 @@ public class DataInitializer {
                 categoriaRepo.saveAll(List.of(infantil, juvenil, adultos));
 
                 horarioRepo.saveAll(List.of(
-                        crearHorario(infantil, DiaSemana.LUNES, LocalTime.of(16, 0), LocalTime.of(17, 30)),
-                        crearHorario(infantil, DiaSemana.MIERCOLES, LocalTime.of(16, 0), LocalTime.of(17, 30)),
-                        crearHorario(juvenil, DiaSemana.MARTES, LocalTime.of(17, 30), LocalTime.of(19, 0)),
-                        crearHorario(juvenil, DiaSemana.JUEVES, LocalTime.of(17, 30), LocalTime.of(19, 0)),
-                        crearHorario(adultos, DiaSemana.VIERNES, LocalTime.of(19, 0), LocalTime.of(20, 30)),
-                        crearHorario(adultos, DiaSemana.SABADO, LocalTime.of(9, 0), LocalTime.of(11, 0))
+                        crearHorario(infantil, DiaSemana.LUNES, LocalTime.of(16, 0), LocalTime.of(17, 30), 20, "Sala A", instructorPorDefecto),
+                        crearHorario(infantil, DiaSemana.MIERCOLES, LocalTime.of(16, 0), LocalTime.of(17, 30), 20, "Sala A", instructorPorDefecto),
+                        crearHorario(juvenil, DiaSemana.MARTES, LocalTime.of(17, 30), LocalTime.of(19, 0), 20, "Sala A", instructorPorDefecto),
+                        crearHorario(juvenil, DiaSemana.JUEVES, LocalTime.of(17, 30), LocalTime.of(19, 0), 20, "Sala A", instructorPorDefecto),
+                        crearHorario(adultos, DiaSemana.VIERNES, LocalTime.of(19, 0), LocalTime.of(20, 30), 25, "Sala B", instructorPorDefecto),
+                        crearHorario(adultos, DiaSemana.SABADO, LocalTime.of(9, 0), LocalTime.of(11, 0), 25, "Sala B", instructorPorDefecto)
                 ));
             }
 
-            // 3. Criterios de Examen (Suman 100 puntos en total)
+            LocalDate hoy = LocalDate.now(clock);
+            for (Categoria cat : categoriaRepo.findAll()) {
+                if (tarifaRepository.findFirstByCategoriaIdAndActivoTrueOrderByFechaDesdeDesc(cat.getId()).isEmpty()) {
+                    BigDecimal montoInicial = switch (cat.getNombre().toUpperCase()) {
+                        case "INFANTIL" -> new BigDecimal("100.00");
+                        case "JUVENIL" -> new BigDecimal("120.00");
+                        default -> new BigDecimal("140.00");
+                    };
+                    Tarifa tarifa = new Tarifa();
+                    tarifa.setCategoria(cat);
+                    tarifa.setMontoVigente(montoInicial);
+                    tarifa.setFechaDesde(hoy);
+                    tarifa.setActivo(true);
+                    tarifaRepository.save(tarifa);
+                }
+            }
+
             if (criterioRepo.count() == 0) {
                 criterioRepo.saveAll(List.of(
                         crearCriterio("Básicos y Técnicas de Mano/Patada", new BigDecimal("25.00")),
@@ -64,36 +102,54 @@ public class DataInitializer {
                 ));
             }
 
-            // 4. Instructor inicial por defecto
-            if (instructorRepo.count() == 0) {
-                Persona pInstructor = new Persona();
-                pInstructor.setDni("10000001");
-                pInstructor.setNombres("Sabonim Carlos");
-                pInstructor.setApellidos("Mendoza");
-                pInstructor.setTelefono("999888777");
-                pInstructor = personaRepo.save(pInstructor);
+            // 1. Usuario Admin inicial (con cambio obligatorio de contraseña)
+            if (!usuarioRepository.existsByNombreUsuario("admin")) {
+                Persona pAdmin = personaRepo.findByDni("00000000").orElseGet(() -> {
+                    Persona nueva = new Persona();
+                    nueva.setDni("00000000");
+                    nueva.setNombres("Administrador");
+                    nueva.setApellidos("General");
+                    return personaRepo.save(nueva);
+                });
 
-                Instructor ins = new Instructor();
-                ins.setPersona(pInstructor);
-                instructorRepo.save(ins);
-            }
-
-            // 5. Usuario Administrador por defecto
-            if (usuarioRepository.count() == 0) {
-                Persona pAdmin = new Persona();
-                pAdmin.setDni("00000000");
-                pAdmin.setNombres("Administrador");
-                pAdmin.setApellidos("General");
-                pAdmin = personaRepo.save(pAdmin);
-
-                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
                 Usuario admin = new Usuario(
                         pAdmin,
                         "admin",
-                        encoder.encode("admin123"),
+                        passwordEncoder.encode("admin123"),
                         RolUsuario.ADMINISTRADOR
                 );
+                admin.setRequiereCambioPassword(true);
                 usuarioRepository.save(admin);
+            }
+
+            // 2. Usuario Recepción inicial
+            if (!usuarioRepository.existsByNombreUsuario("recepcion")) {
+                Persona pRec = personaRepo.findByDni("10000002").orElseGet(() -> {
+                    Persona nueva = new Persona();
+                    nueva.setDni("10000002");
+                    nueva.setNombres("Recepción");
+                    nueva.setApellidos("Academia");
+                    return personaRepo.save(nueva);
+                });
+
+                Usuario recepcion = new Usuario(
+                        pRec,
+                        "recepcion",
+                        passwordEncoder.encode("recep1234"),
+                        RolUsuario.RECEPCION
+                );
+                usuarioRepository.save(recepcion);
+            }
+
+            // 3. Usuario Instructor inicial
+            if (!usuarioRepository.existsByNombreUsuario("instructor")) {
+                Usuario uInstructor = new Usuario(
+                        instructorPorDefecto.getPersona(),
+                        "instructor",
+                        passwordEncoder.encode("sabonim1234"),
+                        RolUsuario.INSTRUCTOR
+                );
+                usuarioRepository.save(uInstructor);
             }
         };
     }
@@ -115,12 +171,23 @@ public class DataInitializer {
         return cat;
     }
 
-    private Horario crearHorario(Categoria cat, DiaSemana dia, LocalTime inicio, LocalTime fin) {
+    private Horario crearHorario(
+            Categoria cat,
+            DiaSemana dia,
+            LocalTime inicio,
+            LocalTime fin,
+            int cupoMaximo,
+            String sala,
+            Instructor instructor
+    ) {
         Horario h = new Horario();
         h.setCategoria(cat);
         h.setDiaSemana(dia);
         h.setHoraInicio(inicio);
         h.setHoraFin(fin);
+        h.setCupoMaximo(cupoMaximo);
+        h.setSala(sala);
+        h.setInstructor(instructor);
         return h;
     }
 

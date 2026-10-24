@@ -1,141 +1,179 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Exámenes de Cinturón')}"></head>
-<body class="bg-light">
+<head th:replace="~{fragments/layout :: head('Exámenes de Ascenso')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('examenes')}"></aside>
 
-<nav th:replace="~{fragments/layout :: navbar('examenes')}"></nav>
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Exámenes')}"></header>
 
-<div class="container">
-    <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
-    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <main class="gajog-content">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div th:replace="~{fragments/ui :: pageHeader('EVALUACIÓN TÉCNICA', 'Exámenes de ascenso', 'Programa evaluaciones de grado, filtra por cinturón o resultado y exporta el acta oficial en Excel o PDF.')}"></div>
 
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-danger text-white fw-bold">Programar Examen de Ascenso</div>
-                <div class="card-body">
-                    <form th:action="@{/examenes/guardar}" method="post">
-                        <div class="mb-2">
-                            <label class="form-label">Alumno Postulante</label>
-                            <select name="alumnoId" class="form-select" required>
-                                <option th:each="a : ${alumnos}" th:value="${a.id}"
-                                        th:text="${a.persona.nombres + ' ' + a.persona.apellidos + ' (Actual: ' + a.cinturonActual.nombre + ')'}"></option>
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Cinturón Objetivo</label>
-                            <select name="cinturonObjetivoId" class="form-select" required>
-                                <option th:each="c : ${cinturones}" th:value="${c.id}" th:text="${c.nombre}"></option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Fecha de Evaluación</label>
-                            <input type="date" name="fechaExamen" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100">Inscribir en Examen</button>
-                    </form>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/reportes/examenes/excel(q=${filtro.q}, cinturonObjetivoId=${filtro.cinturonObjetivoId}, resultado=${filtro.resultado}, desde=${filtro.desde}, hasta=${filtro.hasta})}"
+                       class="btn btn-sm btn-gajog-ghost">📊 Exportar Excel</a>
+                    <a th:href="@{/reportes/examenes/pdf(q=${filtro.q}, cinturonObjetivoId=${filtro.cinturonObjetivoId}, resultado=${filtro.resultado}, desde=${filtro.desde}, hasta=${filtro.hasta})}"
+                       class="btn btn-sm btn-gajog-primary">📄 Exportar PDF</a>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold">Exámenes Programados y Resultados</div>
-                <div class="card-body table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Alumno</th>
-                                <th>Grado Objetivo</th>
-                                <th>Fecha</th>
-                                <th>Puntaje</th>
-                                <th>Resultado</th>
-                                <th>Evaluación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="ex : ${examenes}">
-                                <td class="fw-semibold" th:text="${ex.alumno.persona.nombres + ' ' + ex.alumno.persona.apellidos}"></td>
-                                <td>
-                                    <span class="cinturon-badge"
-                                          th:classappend="${'cinturon-' + ex.cinturonObjetivo.color}"
-                                          th:text="${ex.cinturonObjetivo.nombre}"></span>
-                                </td>
-                                <td th:text="${ex.fechaExamen}"></td>
-                                <td class="fw-bold" th:text="${ex.puntajeTotal != null ? ex.puntajeTotal + ' pts' : '-'}"></td>
-                                <td>
-                                    <span class="badge"
-                                          th:classappend="${ex.resultado.name() == 'APROBADO' ? 'bg-success' : (ex.resultado.name() == 'REPROBADO' ? 'bg-danger' : 'bg-warning text-dark')}"
-                                          th:text="${ex.resultado}"></span>
-                                </td>
-                                <td>
-                                    <button th:if="${ex.resultado.name() == 'PENDIENTE'}"
-                                            type="button"
-                                            class="btn btn-sm btn-dark"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalCalificar"
-                                            th:attr="data-id=${ex.id}, data-alumno=${ex.alumno.persona.nombres + ' ' + ex.alumno.persona.apellidos}, data-cinturon=${ex.cinturonObjetivo.nombre}"
-                                            onclick="prepararModal(this)">
-                                        📝 Calificar
-                                    </button>
-                                    <span th:if="${ex.resultado.name() != 'PENDIENTE'}" class="text-muted small">Cerrado</span>
-                                </td>
-                            </tr>
-                            <tr th:if="${#lists.isEmpty(examenes)}">
-                                <td colspan="6" class="text-center text-muted">No hay exámenes registrados.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Calificar los Criterios en una sola vista -->
-<div class="modal fade" id="modalCalificar" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form th:action="@{/examenes/evaluar-completo}" method="post">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title" id="tituloModalExamen">Evaluar Examen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="examenId" id="modalExamenId">
-                    <p class="text-muted mb-3">Ingresa el puntaje obtenido en cada criterio (mínimo aprobatorio total: <strong>70.00 pts</strong>):</p>
-
-                    <div class="row g-3 align-items-center mb-3 border-bottom pb-2" th:each="crit : ${criterios}">
-                        <input type="hidden" name="criterioIds" th:value="${crit.id}">
-                        <div class="col-md-5">
-                            <label class="fw-bold mb-0" th:text="${crit.nombre}"></label>
-                            <div class="small text-muted" th:text="${'Máximo: ' + crit.puntajeMaximo + ' pts'}"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <input type="number" step="0.5" min="0" th:max="${crit.puntajeMaximo}"
-                                   name="puntajes" class="form-control" placeholder="Puntaje" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" name="observaciones" class="form-control form-control-sm" placeholder="Observación (opcional)">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header fw-bold">Programar examen</div>
+                        <div class="card-body">
+                            <form th:action="@{/examenes/guardar}" method="post">
+                                <div class="mb-3">
+                                    <label for="alumnoIdEx" class="form-label">Alumno postulante *</label>
+                                    <select id="alumnoIdEx" name="alumnoId" class="form-select" required>
+                                        <option value="">-- Seleccione alumno --</option>
+                                        <option th:each="a : ${alumnos}" th:value="${a.id}"
+                                                th:text="${a.persona.nombres + ' ' + a.persona.apellidos + ' (Actual: ' + a.cinturonActual.nombre + ')'}"></option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="cinturonObjEx" class="form-label">Cinturón objetivo *</label>
+                                    <select id="cinturonObjEx" name="cinturonObjetivoId" class="form-select" required>
+                                        <option th:each="c : ${cinturones}" th:value="${c.id}" th:text="${c.nombre}"></option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="fechaEx" class="form-label">Fecha de evaluación *</label>
+                                    <input id="fechaEx" type="date" name="fechaExamen" class="form-control" required>
+                                </div>
+                                <button type="submit" class="btn btn-gajog-primary w-100">Inscribir en examen &rarr;</button>
+                            </form>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-bold">Guardar Notas y Evaluar Ascenso</button>
+
+                <div class="col-lg-8">
+                    <!-- Barra de Filtros de Exámenes -->
+                    <div class="card mb-3">
+                        <div class="card-body py-3">
+                            <form th:action="@{/examenes}" method="get" class="row g-2 align-items-end">
+                                <div class="col-12 col-md-3">
+                                    <label for="qEx" class="form-label small mb-1">Alumno o DNI</label>
+                                    <input id="qEx" type="search" name="q" class="form-control form-control-sm"
+                                           placeholder="🔍 Buscar postulante..." th:value="${filtro.q}">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label for="cinEx" class="form-label small mb-1">Cinturón objetivo</label>
+                                    <select id="cinEx" name="cinturonObjetivoId" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option th:each="c : ${cinturones}" th:value="${c.id}"
+                                                th:text="${c.nombre}" th:selected="${c.id == filtro.cinturonObjetivoId}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="resEx" class="form-label small mb-1">Resultado</label>
+                                    <select id="resEx" name="resultado" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option th:each="r : ${resultadosExamen}" th:value="${r}"
+                                                th:text="${r}" th:selected="${r == filtro.resultado}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="desdeEx" class="form-label small mb-1">Desde</label>
+                                    <input id="desdeEx" type="date" name="desde" class="form-control form-control-sm" th:value="${filtro.desde}">
+                                </div>
+                                <div class="col-6 col-md-2 d-flex gap-1">
+                                    <button type="submit" class="btn btn-sm btn-gajog-primary w-100">Filtrar</button>
+                                    <a th:href="@{/examenes}" class="btn btn-sm btn-gajog-ghost">✕</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="fw-bold">Exámenes programados y evaluados</span>
+                            <span class="status-pill status-success" th:text="${#lists.size(examenes) + ' evaluaciones'}">0</span>
+                        </div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-hover align-middle" id="tablaExamenes">
+                                <thead>
+                                    <tr>
+                                        <th>Alumno</th>
+                                        <th>Objetivo</th>
+                                        <th>Fecha</th>
+                                        <th>Puntaje</th>
+                                        <th>Resultado</th>
+                                        <th class="text-end">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="ex : ${examenes}">
+                                        <td class="fw-bold" th:text="${ex.alumno.persona.nombres + ' ' + ex.alumno.persona.apellidos}"></td>
+                                        <td>
+                                            <span class="cinturon-badge"
+                                                  th:classappend="${'cinturon-' + ex.cinturonObjetivo.color}"
+                                                  th:text="${ex.cinturonObjetivo.nombre}"></span>
+                                        </td>
+                                        <td th:text="${ex.fechaExamen}"></td>
+                                        <td class="fw-bold" th:text="${ex.puntajeTotal != null ? ex.puntajeTotal + ' / 100' : '-'}"></td>
+                                        <td>
+                                            <span th:replace="~{fragments/ui :: statusBadge(${ex.resultado}, ${ex.resultado.name() == 'APROBADO' ? 'success' : (ex.resultado.name() == 'REPROBADO' ? 'danger' : 'warning')})}"></span>
+                                        </td>
+                                        <td class="text-end">
+                                            <button th:if="${ex.resultado.name() == 'PENDIENTE'}" type="button"
+                                                    class="btn btn-sm btn-gajog-primary" data-bs-toggle="modal"
+                                                    th:data-bs-target="${'#modalEval' + ex.id}">📝 Calificar</button>
+
+                                            <div th:if="${ex.resultado.name() == 'PENDIENTE'}" class="modal fade text-start"
+                                                 th:id="${'modalEval' + ex.id}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                    <div class="modal-content rounded-4">
+                                                        <form th:action="@{/examenes/evaluar-completo}" method="post">
+                                                            <div class="modal-header border-bottom border-secondary">
+                                                                <h5 class="modal-title fw-bold"
+                                                                    th:text="${'Evaluar ascenso: ' + ex.alumno.persona.nombres + ' ' + ex.alumno.persona.apellidos}"></h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <input type="hidden" name="examenId" th:value="${ex.id}">
+                                                                <div th:each="crit : ${criterios}" class="row g-2 align-items-center mb-3 pb-3 border-bottom border-secondary">
+                                                                    <input type="hidden" name="criterioIds" th:value="${crit.id}">
+                                                                    <div class="col-md-5">
+                                                                        <div class="fw-bold" th:text="${crit.nombre}"></div>
+                                                                        <small class="text-muted" th:text="${'Puntaje máximo: ' + crit.puntajeMaximo + ' pts'}"></small>
+                                                                    </div>
+                                                                    <div class="col-md-3">
+                                                                        <input type="number" step="0.5" min="0" th:max="${crit.puntajeMaximo}"
+                                                                               name="puntajes" class="form-control" placeholder="Puntaje" required>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <input type="text" name="observaciones" class="form-control" placeholder="Observación opcional">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer border-top border-secondary">
+                                                                <button type="button" class="btn btn-gajog-ghost" data-bs-dismiss="modal">Cancelar</button>
+                                                                <button type="submit" class="btn btn-gajog-primary">Guardar calificación final</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(examenes)}" class="empty-row">
+                                        <td colspan="6">
+                                            <div th:replace="~{fragments/ui :: emptyState('🏅', 'Sin exámenes registrados', 'Inscribe a un alumno en el formulario lateral para programar su ascenso.')}"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+        </main>
     </div>
 </div>
-
 <div th:replace="~{fragments/layout :: scripts}"></div>
-<script>
-    function prepararModal(boton) {
-        document.getElementById('modalExamenId').value = boton.getAttribute('data-id');
-        document.getElementById('tituloModalExamen').innerText =
-            'Evaluando a: ' + boton.getAttribute('data-alumno') + ' → ' + boton.getAttribute('data-cinturon');
-    }
-</script>
 </body>
 </html>

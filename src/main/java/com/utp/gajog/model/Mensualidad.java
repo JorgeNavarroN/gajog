@@ -1,13 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.utp.gajog.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
 
 @Entity
 @Table(
@@ -17,6 +12,9 @@ import java.time.LocalDate;
                     name = "uk_mensualidad_alumno_periodo",
                     columnNames = {"alumno_id", "anio", "mes"}
             )
+        },
+        indexes = {
+            @Index(name = "idx_mensualidades_estado_vencimiento", columnList = "estado, fecha_vencimiento")
         }
 )
 public class Mensualidad {
@@ -42,14 +40,12 @@ public class Mensualidad {
     private LocalDate fechaVencimiento;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 15)
-    private EstadoMensualidad estado
-            = EstadoMensualidad.PENDIENTE;
+    @Column(nullable = false, length = 20)
+    private EstadoMensualidad estado = EstadoMensualidad.POR_VENCER;
 
     public Mensualidad() {
     }
 
-    // Generar getters y setters
     public Long getId() {
         return id;
     }

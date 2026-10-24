@@ -1,12 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.utp.gajog.model;
 
+import com.utp.gajog.config.TimeConfig;
 import jakarta.persistence.*;
 import java.time.LocalDate;
-
 
 @Entity
 @Table(name = "observaciones_progreso")
@@ -36,11 +32,10 @@ public class ObservacionProgreso {
     @PrePersist
     public void antesDeGuardar() {
         if (fecha == null) {
-            fecha = LocalDate.now();
+            fecha = LocalDate.now(TimeConfig.ZONA_LIMA);
         }
     }
 
-    // Generar getters y setters
     public Long getId() {
         return id;
     }

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- 1. Encabezado de página estilo maqueta -->
+<div th:fragment="pageHeader(eyebrow, titulo, subtitulo)" class="mb-4">
+    <div class="gajog-eyebrow" th:text="${eyebrow}">ADMINISTRACIÓN</div>
+    <h1 class="gajog-page-title" th:text="${titulo}">Título</h1>
+    <p class="gajog-page-subtitle" th:text="${subtitulo}">Subtítulo descriptivo</p>
+</div>
+
+<!-- 2. Tarjeta KPI Reutilizable -->
+<div th:fragment="kpiCard(etiqueta, valor, detalle, enlace)" class="card gajog-kpi-card">
+    <div class="gajog-kpi-label" th:text="${etiqueta}">Indicador</div>
+    <div class="gajog-kpi-value" th:text="${valor}">0</div>
+    <div>
+        <a th:if="${enlace != null && !#strings.isEmpty(enlace)}" th:href="@{${enlace}}" class="gajog-kpi-hint" th:text="${detalle}">Ver detalle</a>
+        <span th:if="${enlace == null || #strings.isEmpty(enlace)}" class="gajog-kpi-hint" th:text="${detalle}">Detalle</span>
+    </div>
+</div>
+
+<!-- 3. Barra de búsqueda / herramientas de tabla -->
+<div th:fragment="tableToolbar(titulo, inputId, targetTableSelector, placeholder)"
+     class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+    <span class="fw-bold" th:text="${titulo}">Listado</span>
+    <div class="w-auto" style="min-width: 260px;">
+        <label th:for="${inputId}" class="visually-hidden" th:text="${placeholder}">Buscar</label>
+        <input type="search" th:id="${inputId}" th:attr="data-table-search=${targetTableSelector}"
+               class="form-control form-control-sm" th:placeholder="${placeholder}">
+    </div>
+</div>
+
+<!-- 4. Insignia de estado unificada -->
+<span th:fragment="statusBadge(texto, variante)"
+      class="status-pill"
+      th:classappend="${'status-' + variante}"
+      th:text="${texto}">Estado</span>
+
+<!-- 5. Estado vacío para tablas o tarjetas -->
+<div th:fragment="emptyState(icono, titulo, descripcion)" class="text-center py-5 px-3">
+    <div class="display-5 mb-2" th:text="${icono}">📂</div>
+    <h6 class="fw-bold mb-1" th:text="${titulo}">Sin registros disponibles</h6>
+    <p class="small text-muted mb-0" th:text="${descripcion}">Aún no se ha registrado información en esta sección.</p>
+</div>
+
+<!-- 6. Paginación reutilizable -->
+<nav th:fragment="pagination(paginaActual, totalPaginas, urlBase)"
+     th:if="${totalPaginas != null and totalPaginas > 1}"
+     aria-label="Paginación de registros" class="mt-3">
+    <ul class="pagination pagination-sm justify-content-end mb-0">
+        <li class="page-item" th:classappend="${paginaActual <= 1 ? 'disabled' : ''}">
+            <a class="page-link btn-gajog-ghost" th:href="@{${urlBase}(page=${paginaActual - 1})}">Anterior</a>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link bg-transparent border-0 text-muted"
+                  th:text="${'Página ' + paginaActual + ' de ' + totalPaginas}">Página 1</span>
+        </li>
+        <li class="page-item" th:classappend="${paginaActual >= totalPaginas ? 'disabled' : ''}">
+            <a class="page-link btn-gajog-ghost" th:href="@{${urlBase}(page=${paginaActual + 1})}">Siguiente</a>
+        </li>
+    </ul>
+</nav>
+
+<!-- 7. Toasts flotantes para éxitos y errores (reemplazan a los alert fijos) -->
+<div th:fragment="toasts" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div th:if="${exito}" class="toast align-items-center text-bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold">
+                ✅ <span th:text="${exito}">Operación exitosa</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+        </div>
+    </div>
+
+    <div th:if="${error}" class="toast align-items-center text-bg-danger border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold">
+                ⚠️ <span th:text="${error}">Ocurrió un error</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+        </div>
+    </div>
+</div>
+
+<!-- 8. Modal de confirmación global -->
+<div th:fragment="confirmModal" class="modal fade" id="modalConfirmacionGlobal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-bottom border-secondary">
+                <h5 class="modal-title fw-bold">Confirmar acción</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p id="modalConfirmacionMensaje" class="mb-0">¿Estás seguro de continuar con esta operación?</p>
+            </div>
+            <div class="modal-footer border-top border-secondary">
+                <button type="button" class="btn btn-gajog-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmacionAceptar" class="btn btn-gajog-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,182 +1,672 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Mensualidades y Pagos')}"></head>
-<body class="bg-light">
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('pagos')}"></aside>
 
-<nav th:replace="~{fragments/layout :: navbar('pagos')}"></nav>
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Mensualidades')}"></header>
 
-<div class="container">
-    <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
-    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <main class="gajog-content">
+            <!-- Encabezado con Selector de Mes/Año y Botones Principales -->
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div>
+                    <div class="gajog-eyebrow" th:text="${'ADMINISTRACIÓN / CICLO ' + filtro.anio}">ADMINISTRACIÓN / CICLO 2026</div>
+                    <h1 class="gajog-page-title">Mensualidades</h1>
+                    <p class="gajog-page-subtitle">Registra el pago recibido, consulta las cuotas por vencer y gestiona el historial del mes seleccionado.</p>
+                </div>
 
-    <div class="row g-4">
-        <!-- Columna Izquierda: Generación Individual y Masiva -->
-        <div class="col-md-4">
-            <!-- Generación Masiva -->
-            <div class="card shadow-sm mb-4 border-dark">
-                <div class="card-header bg-dark text-white fw-bold">⚡ Generar Cuota a Todos los Activos</div>
-                <div class="card-body">
-                    <form th:action="@{/pagos/mensualidad/masivo}" method="post">
-                        <div class="row mb-2">
-                            <div class="col-6">
-                                <label class="form-label">Año</label>
-                                <input type="number" name="anio" class="form-control" value="2026" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Mes (1-12)</label>
-                                <input type="number" name="mes" class="form-control" min="1" max="12" value="10" required>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Monto General (S/)</label>
-                            <input type="number" step="0.01" name="monto" class="form-control" value="120.00" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Fecha de Vencimiento</label>
-                            <input type="date" name="fechaVencimiento" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-dark w-100 fw-bold">Generar Mes para Todos</button>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <!-- Selector rápido de Mes / Año -->
+                    <form th:action="@{/pagos}" method="get" class="d-flex align-items-center gap-2">
+                        <input type="hidden" name="tab" th:value="${filtro.tabActiva()}">
+                        <label for="selectMesTop" class="visually-hidden">Mes de control</label>
+                        <select id="selectMesTop" name="mes" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                            <option th:each="entry : ${mesesCatalogo}"
+                                    th:value="${entry.key}"
+                                    th:text="${entry.value}"
+                                    th:selected="${entry.key == filtro.mes}"></option>
+                        </select>
+                        <label for="selectAnioTop" class="visually-hidden">Año</label>
+                        <input id="selectAnioTop" type="number" name="anio" class="form-control form-control-sm"
+                               style="width: 90px;" min="2020" max="2100" th:value="${filtro.anio}" onchange="this.form.submit()">
                     </form>
+
+                    <!-- Botón para generar cuotas del mes si faltan -->
+                    <form th:action="@{/pagos/mensualidad/masivo}" method="post" class="d-inline">
+                        <input type="hidden" name="anio" th:value="${filtro.anio}">
+                        <input type="hidden" name="mes" th:value="${filtro.mes}">
+                        <button type="submit" class="btn btn-sm btn-gajog-ghost" title="Generar cuotas del mes según tarifa de categoría">
+                            ⚡ Generar mes (<span th:text="${nombreMesSeleccionado}"></span>)
+                        </button>
+                    </form>
+
+                    <!-- Botón Nuevo Pago que activa el formulario -->
+                    <button type="button" id="btnAbrirNuevoPago" class="btn btn-gajog-primary"
+                            data-bs-toggle="offcanvas" data-bs-target="#offcanvasNuevoPago">
+                        + Nuevo pago
+                    </button>
+                    <a th:href="@{/reportes/cobranza/excel(anio=${filtro.anio}, mes=${filtro.mes}, tab=${filtro.tabActiva()}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, estado=${filtro.estado}, medioPago=${filtro.medioPago})}"
+                    class="btn btn-sm btn-gajog-ghost">📊 Excel</a>
+                    <a th:href="@{/reportes/cobranza/pdf(anio=${filtro.anio}, mes=${filtro.mes}, tab=${filtro.tabActiva()}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, estado=${filtro.estado}, medioPago=${filtro.medioPago})}"
+                    class="btn btn-sm btn-gajog-ghost">📄 PDF</a>
                 </div>
             </div>
 
-            <!-- Generación Individual -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-warning fw-bold">Programar Cuota Individual</div>
-                <div class="card-body">
-                    <form th:action="@{/pagos/mensualidad/generar}" method="post">
-                        <div class="mb-2">
-                            <label class="form-label">Alumno</label>
-                            <select name="alumnoId" class="form-select" required>
-                                <option th:each="a : ${alumnos}"
-                                        th:value="${a.id}"
-                                        th:text="${a.persona.dni + ' - ' + a.persona.nombres + ' ' + a.persona.apellidos}"></option>
+            <!-- 5 Tarjetas KPI del Mes Seleccionado -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-sm-6 col-xl">
+                    <div class="card gajog-kpi-card">
+                        <div class="gajog-kpi-label">Total recaudado</div>
+                        <div class="gajog-kpi-value" th:text="${'S/ ' + #numbers.formatDecimal(resumen.totalRecaudado, 1, 2)}">S/ 0.00</div>
+                        <span class="gajog-kpi-hint" th:text="${nombreMesSeleccionado + ' ' + filtro.anio}">Mes</span>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-6 col-xl">
+                    <div class="card gajog-kpi-card">
+                        <div class="gajog-kpi-label">Mensualidades pagadas</div>
+                        <div class="gajog-kpi-value" th:text="${resumen.cantidadPagados}">0</div>
+                        <span class="gajog-kpi-hint">Del mes seleccionado</span>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-6 col-xl">
+                    <div class="card gajog-kpi-card">
+                        <div class="gajog-kpi-label">Por vencer</div>
+                        <div class="gajog-kpi-value" th:text="${resumen.cantidadPorVencer}">0</div>
+                        <span class="gajog-kpi-hint">Dentro de fecha</span>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-6 col-xl">
+                    <div class="card gajog-kpi-card">
+                        <div class="gajog-kpi-label">Vencidas – en riesgo de retiro</div>
+                        <div class="gajog-kpi-value text-danger" th:text="${resumen.cantidadVencidas}">0</div>
+                        <span class="gajog-kpi-hint">Requieren seguimiento</span>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-6 col-xl">
+                    <div class="card gajog-kpi-card">
+                        <div class="gajog-kpi-label">% de cobranza</div>
+                        <div class="gajog-kpi-value" th:text="${resumen.porcentajeCobranza + '%'}">0%</div>
+                        <span class="gajog-kpi-hint">Efectividad del periodo</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra de Búsqueda y Filtros en Servidor -->
+            <div class="card mb-4">
+                <div class="card-body py-3">
+                    <form th:action="@{/pagos}" method="get" class="row g-2 align-items-end">
+                        <input type="hidden" name="anio" th:value="${filtro.anio}">
+                        <input type="hidden" name="mes" th:value="${filtro.mes}">
+                        <input type="hidden" name="tab" th:value="${filtro.tabActiva()}">
+
+                        <div class="col-12 col-md-3">
+                            <label for="filtroQ" class="form-label small mb-1">Alumno o DNI</label>
+                            <input id="filtroQ" type="search" name="q" class="form-control form-control-sm"
+                                   placeholder="🔍 Nombre, apellido o DNI..." th:value="${filtro.q}">
+                        </div>
+
+                        <div class="col-6 col-md-2">
+                            <label for="filtroCat" class="form-label small mb-1">Categoría</label>
+                            <select id="filtroCat" name="categoriaId" class="form-select form-select-sm">
+                                <option value="">Todas</option>
+                                <option th:each="c : ${categorias}" th:value="${c.id}"
+                                        th:text="${c.nombre}" th:selected="${c.id == filtro.categoriaId}"></option>
                             </select>
                         </div>
-                        <div class="row mb-2">
-                            <div class="col-6">
-                                <label class="form-label">Año</label>
-                                <input type="number" name="anio" class="form-control" value="2026" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Mes (1-12)</label>
-                                <input type="number" name="mes" class="form-control" min="1" max="12" value="10" required>
-                            </div>
+
+                        <div class="col-6 col-md-3">
+                            <label for="filtroHor" class="form-label small mb-1">Horario / Grupo</label>
+                            <select id="filtroHor" name="horarioId" class="form-select form-select-sm">
+                                <option value="">Todos los grupos</option>
+                                <option th:each="h : ${horarios}" th:value="${h.id}"
+                                        th:text="${h.categoria.nombre + ' · ' + h.diaSemana + ' ' + h.horaInicio}"
+                                        th:selected="${h.id == filtro.horarioId}"></option>
+                            </select>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label">Monto (S/)</label>
-                            <input type="number" step="0.01" name="monto" class="form-control" value="120.00" required>
+
+                        <div class="col-6 col-md-2" th:if="${filtro.tabActiva() != 'pagados'}">
+                            <label for="filtroEstado" class="form-label small mb-1">Estado</label>
+                            <select id="filtroEstado" name="estado" class="form-select form-select-sm">
+                                <option value="">Por vencer y Vencidas</option>
+                                <option value="POR_VENCER" th:selected="${filtro.estado != null && filtro.estado.name() == 'POR_VENCER'}">Por vencer</option>
+                                <option value="VENCIDA" th:selected="${filtro.estado != null && filtro.estado.name() == 'VENCIDA'}">Vencida – en riesgo de retiro</option>
+                            </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Fecha de Vencimiento</label>
-                            <input type="date" name="fechaVencimiento" class="form-control" required>
+
+                        <div class="col-6 col-md-2" th:if="${filtro.tabActiva() == 'pagados'}">
+                            <label for="filtroMedio" class="form-label small mb-1">Medio de pago</label>
+                            <select id="filtroMedio" name="medioPago" class="form-select form-select-sm">
+                                <option value="">Todos los medios</option>
+                                <option th:each="mp : ${mediosPago}" th:value="${mp}"
+                                        th:text="${mp}" th:selected="${mp == filtro.medioPago}"></option>
+                            </select>
                         </div>
-                        <button type="submit" class="btn btn-warning w-100 fw-bold">Generar Cuota Individual</button>
+
+                        <div class="col-6 col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-gajog-primary w-100">Filtrar</button>
+                            <a th:href="@{/pagos(anio=${filtro.anio}, mes=${filtro.mes}, tab=${filtro.tabActiva()})}"
+                               class="btn btn-sm btn-gajog-ghost">Limpiar</a>
+                        </div>
                     </form>
                 </div>
             </div>
-        </div>
 
-        <!-- Columna Derecha: Mensualidades e Historial de Pagos -->
-        <div class="col-md-8">
-            <!-- Tabla de Mensualidades -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white fw-bold">Estado de Mensualidades</div>
-                <div class="card-body table-responsive">
+            <!-- Pestañas de Navegación: Pagados vs Por Vencer / Vencidas -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div class="d-flex gap-2">
+                    <a th:href="@{/pagos(anio=${filtro.anio}, mes=${filtro.mes}, tab='pagados', q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                       class="btn btn-sm"
+                       th:classappend="${filtro.tabActiva() == 'pagados' ? 'btn-gajog-primary' : 'btn-gajog-ghost'}">
+                        Pagados del mes (<span th:text="${resumen.cantidadPagados}">0</span>)
+                    </a>
+                    <a th:href="@{/pagos(anio=${filtro.anio}, mes=${filtro.mes}, tab='por-vencer', q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                       class="btn btn-sm"
+                       th:classappend="${filtro.tabActiva() != 'pagados' ? 'btn-gajog-primary' : 'btn-gajog-ghost'}">
+                        Por vencer y vencidas (<span th:text="${resumen.cantidadPorVencer + resumen.cantidadVencidas}">0</span>)
+                    </a>
+                </div>
+            </div>
+
+            <!-- TABLA 1: ALUMNOS QUE PAGARON EN EL MES (CON OPCIÓN DE EDICIÓN Y ANULACIÓN) -->
+            <div class="card mb-4" th:if="${filtro.tabActiva() == 'pagados'}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold" th:text="${'Alumnos que pagaron en ' + nombreMesSeleccionado + ' ' + filtro.anio}">Pagados</span>
+                    <span class="status-pill status-success" th:text="${pagePagados.totalElements + ' pagos registrados'}">0</span>
+                </div>
+                <div class="card-body p-0 table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
+                                <th>Recibo</th>
                                 <th>Alumno</th>
-                                <th>Periodo</th>
+                                <th>DNI</th>
+                                <th>Fecha de pago</th>
+                                <th>Medio / Operación</th>
                                 <th>Monto</th>
-                                <th>Vencimiento</th>
                                 <th>Estado</th>
-                                <th>Acción de Cobro</th>
+                                <th class="text-end">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="m : ${mensualidades}">
-                                <td class="fw-semibold" th:text="${m.alumno.persona.nombres + ' ' + m.alumno.persona.apellidos}"></td>
-                                <td th:text="${m.mes + '/' + m.anio}"></td>
-                                <td th:text="${'S/ ' + m.monto}"></td>
-                                <td th:text="${m.fechaVencimiento}"></td>
+                            <tr th:each="p : ${pagePagados.content}">
+                                <td class="fw-semibold" th:text="${'#' + p.id}"></td>
                                 <td>
-                                    <span class="badge"
-                                          th:classappend="${m.estado.name() == 'PAGADA' ? 'bg-success' : (m.estado.name() == 'VENCIDA' ? 'bg-danger' : 'bg-warning text-dark')}"
-                                          th:text="${m.estado}"></span>
+                                    <div class="fw-bold" th:text="${p.alumno.persona.nombres + ' ' + p.alumno.persona.apellidos}"></div>
+                                    <small class="text-muted" th:text="${'Reg. por: ' + p.registradoPor}"></small>
                                 </td>
+                                <td th:text="${dniEnmascaradoPorAlumno[p.alumno.id] ?: p.alumno.persona.dni}"></td>
+                                <td th:text="${#temporals.format(p.fechaPago, 'dd/MM/yyyy')}"></td>
                                 <td>
-                                    <form th:if="${m.estado.name() != 'PAGADA'}"
-                                          th:action="@{/pagos/mensualidad/pagar}" method="post"
-                                          class="d-flex gap-1">
-                                        <input type="hidden" name="mensualidadId" th:value="${m.id}">
-                                        <select name="medioPago" class="form-select form-select-sm" required>
-                                            <option th:each="mp : ${mediosPago}" th:value="${mp}" th:text="${mp}"></option>
-                                        </select>
-                                        <button type="submit" class="btn btn-sm btn-success">Cobrar</button>
-                                    </form>
-                                    <span th:if="${m.estado.name() == 'PAGADA'}" class="text-success small fw-bold">✓ Cancelado</span>
+                                    <span class="fw-semibold" th:text="${p.medioPago}"></span>
+                                    <div th:if="${p.numeroOperacion != null}" class="small text-muted" th:text="${'Op: ' + p.numeroOperacion}"></div>
+                                </td>
+                                <td class="fw-bold" th:text="${'S/ ' + #numbers.formatDecimal(p.monto, 1, 2)}"></td>
+                                <td>
+                                    <span th:replace="~{fragments/ui :: statusBadge('Pagado', 'success')}"></span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a th:href="@{/pagos/{id}/recibo(id=${p.id})}" class="btn btn-sm btn-gajog-ghost" target="_blank">📄 Recibo</a>
+                                        <button type="button" class="btn btn-sm btn-gajog-ghost"
+                                                data-bs-toggle="modal" th:data-bs-target="${'#modalEditarPago' + p.id}">
+                                            ✏️ Editar
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal" th:data-bs-target="${'#modalAnularPago' + p.id}">
+                                            Anular
+                                        </button>
+                                    </div>
+
+                                    <!-- Modal de Edición con @Version -->
+                                    <div class="modal fade text-start" th:id="${'modalEditarPago' + p.id}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content rounded-4">
+                                                <form th:action="@{/pagos/{id}/editar(id=${p.id})}" method="post">
+                                                    <div class="modal-header border-bottom border-secondary">
+                                                        <h5 class="modal-title fw-bold" th:text="${'Editar pago #' + p.id + ' · ' + p.alumno.persona.nombres}"></h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="version" th:value="${p.version}">
+                                                        <input type="hidden" name="anio" th:value="${filtro.anio}">
+                                                        <input type="hidden" name="mes" th:value="${filtro.mes}">
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Monto recibido (S/) *</label>
+                                                            <input type="number" step="0.01" min="0.01" name="monto" class="form-control"
+                                                                   th:value="${p.monto}" th:readonly="${!puedeEditarMonto}" required>
+                                                        </div>
+                                                        <div class="row g-2 mb-3">
+                                                            <div class="col-6">
+                                                                <label class="form-label">Fecha del pago *</label>
+                                                                <input type="date" name="fechaPago" class="form-control"
+                                                                       th:value="${#temporals.format(p.fechaPago, 'yyyy-MM-dd')}" required>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <label class="form-label">Medio de pago *</label>
+                                                                <select name="medioPago" class="form-select" required>
+                                                                    <option th:each="mp : ${mediosPago}" th:value="${mp}"
+                                                                            th:text="${mp}" th:selected="${mp == p.medioPago}"></option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Número de operación (Yape/Plin/Transf.)</label>
+                                                            <input type="text" name="numeroOperacion" class="form-control" maxlength="60"
+                                                                   th:value="${p.numeroOperacion}">
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <label class="form-label">Observación</label>
+                                                            <textarea name="observacion" class="form-control" rows="2" maxlength="500"
+                                                                      th:text="${p.observacion}"></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-top border-secondary">
+                                                        <button type="button" class="btn btn-gajog-ghost" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-gajog-primary">Guardar cambios</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modal de Anulación con Motivo Obligatorio -->
+                                    <div class="modal fade text-start" th:id="${'modalAnularPago' + p.id}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content rounded-4">
+                                                <form th:action="@{/pagos/{id}/anular(id=${p.id})}" method="post">
+                                                    <div class="modal-header border-bottom border-secondary">
+                                                        <h5 class="modal-title fw-bold">Anular pago #<span th:text="${p.id}"></span></h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="anio" th:value="${filtro.anio}">
+                                                        <input type="hidden" name="mes" th:value="${filtro.mes}">
+                                                        <p class="small text-muted">
+                                                            Al anular este comprobante, la mensualidad del alumno volverá a estado
+                                                            <strong>Por vencer</strong> o <strong>Vencida – en riesgo de retiro</strong> según la fecha.
+                                                        </p>
+                                                        <div class="mb-2">
+                                                            <label class="form-label">Motivo de anulación *</label>
+                                                            <textarea name="motivoAnulacion" class="form-control" rows="2" maxlength="255"
+                                                                      placeholder="Ej. Error en medio de pago o duplicidad de operación" required></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-top border-secondary">
+                                                        <button type="button" class="btn btn-gajog-ghost" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger">Confirmar anulación</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
-                            <tr th:if="${#lists.isEmpty(mensualidades)}">
-                                <td colspan="6" class="text-center text-muted">No hay mensualidades registradas.</td>
+                            <tr th:if="${pagePagados.empty}" class="empty-row">
+                                <td colspan="8">
+                                    <div th:replace="~{fragments/ui :: emptyState('💳', 'Sin pagos registrados en este mes', 'Pulsa el botón + Nuevo pago para registrar una mensualidad pagada.')}"></div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Paginación de Pagados -->
+                <div class="card-footer bg-transparent border-top border-secondary d-flex justify-content-between align-items-center py-2 px-3"
+                     th:if="${pagePagados.totalPages > 1}">
+                    <small class="text-muted" th:text="${'Página ' + (pagePagados.number + 1) + ' de ' + pagePagados.totalPages}"></small>
+                    <div class="d-flex gap-1">
+                        <a th:if="${pagePagados.hasPrevious()}"
+                           th:href="@{/pagos(anio=${filtro.anio}, mes=${filtro.mes}, tab='pagados', page=${pagePagados.number - 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, medioPago=${filtro.medioPago})}"
+                           class="btn btn-sm btn-gajog-ghost">Anterior</a>
+                        <a th:if="${pagePagados.hasNext()}"
+                           th:href="@{/pagos(anio=${filtro.anio}, mes=${filtro.mes}, tab='pagados', page=${pagePagados.number + 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, medioPago=${filtro.medioPago})}"
+                           class="btn btn-sm btn-gajog-ghost">Siguiente</a>
+                    </div>
                 </div>
             </div>
 
-            <!-- Historial de Pagos y Emisión de Recibos -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold">Historial de Pagos y Comprobantes</div>
-                <div class="card-body table-responsive">
-                    <table class="table table-sm table-hover align-middle">
-                        <thead class="table-light">
+            <!-- TABLA 2: MENSUALIDADES POR VENCER Y VENCIDAS DEL MES -->
+            <div class="card mb-4" th:if="${filtro.tabActiva() != 'pagados'}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold" th:text="${'Cuotas por vencer y vencidas · ' + nombreMesSeleccionado + ' ' + filtro.anio}">Estado de alumnos</span>
+                    <span class="status-pill status-warning" th:text="${pagePorCobrar.totalElements + ' cuotas en seguimiento'}">0</span>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
                             <tr>
-                                <th>N° Recibo</th>
                                 <th>Alumno</th>
-                                <th>Concepto</th>
-                                <th>Medio</th>
+                                <th>DNI</th>
+                                <th>Periodo</th>
+                                <th>Fecha límite</th>
                                 <th>Monto</th>
                                 <th>Estado</th>
-                                <th>Opciones</th>
+                                <th class="text-end">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="p : ${pagos}">
-                                <td class="fw-bold" th:text="${'#' + p.id}"></td>
-                                <td th:text="${p.alumno.persona.nombres + ' ' + p.alumno.persona.apellidos}"></td>
-                                <td th:text="${p.mensualidad != null ? 'Mensualidad ' + p.mensualidad.mes + '/' + p.mensualidad.anio : p.tipoPago}"></td>
-                                <td><span class="badge bg-secondary" th:text="${p.medioPago}"></span></td>
-                                <td class="fw-bold" th:text="${'S/ ' + p.monto}"></td>
+                            <tr th:each="m : ${pagePorCobrar.content}">
                                 <td>
-                                    <span class="badge"
-                                          th:classappend="${p.estado.name() == 'REGISTRADO' ? 'bg-success' : 'bg-danger'}"
-                                          th:text="${p.estado}"></span>
+                                    <div class="fw-bold" th:text="${m.alumno.persona.nombres + ' ' + m.alumno.persona.apellidos}"></div>
+                                    <a th:href="@{/alumnos/{id}(id=${m.alumno.id})}" class="small text-muted text-decoration-none">Ver expediente &rarr;</a>
                                 </td>
-                                <td class="d-flex gap-1">
-                                    <a th:href="@{/pagos/{id}/recibo(id=${p.id})}"
-                                       target="_blank"
-                                       class="btn btn-sm btn-outline-dark">🖨️ Recibo</a>
-                                    <form th:if="${p.estado.name() == 'REGISTRADO'}"
-                                          th:action="@{/pagos/{id}/anular(id=${p.id})}"
-                                          method="post"
-                                          onsubmit="return confirm('¿Seguro que deseas anular este pago?');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Anular</button>
-                                    </form>
+                                <td th:text="${dniEnmascaradoPorAlumno[m.alumno.id] ?: m.alumno.persona.dni}"></td>
+                                <td th:text="${nombreMesSeleccionado + ' ' + m.anio}"></td>
+                                <td th:text="${#temporals.format(m.fechaVencimiento, 'dd/MM/yyyy')}"></td>
+                                <td class="fw-bold" th:text="${'S/ ' + #numbers.formatDecimal(m.monto, 1, 2)}"></td>
+                                <td>
+                                    <span th:replace="~{fragments/ui :: statusBadge(${m.estado.etiqueta}, ${m.estado.name() == 'VENCIDA' ? 'danger' : 'warning'})}"></span>
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-gajog-primary btn-precargar-cobro"
+                                            th:attr="data-mensualidad-id=${m.id},
+                                                     data-alumno-id=${m.alumno.id},
+                                                     data-alumno-nombre=${m.alumno.persona.nombres + ' ' + m.alumno.persona.apellidos},
+                                                     data-anio=${m.anio},
+                                                     data-mes=${m.mes},
+                                                     data-monto=${m.monto}">
+                                        Cobrar &rarr;
+                                    </button>
                                 </td>
                             </tr>
-                            <tr th:if="${#lists.isEmpty(pagos)}">
-                                <td colspan="7" class="text-center text-muted">Aún no se han registrado pagos.</td>
+                            <tr th:if="${pagePorCobrar.empty}" class="empty-row">
+                                <td colspan="7">
+                                    <div th:replace="~{fragments/ui :: emptyState('✅', 'Sin cuotas por vencer en este filtro', 'Todos los alumnos filtrados se encuentran al día o aún no se han generado las cuotas del mes.')}"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación de Por Vencer / Vencidas -->
+                <div class="card-footer bg-transparent border-top border-secondary d-flex justify-content-between align-items-center py-2 px-3"
+                     th:if="${pagePorCobrar.totalPages > 1}">
+                    <small class="text-muted" th:text="${'Página ' + (pagePorCobrar.number + 1) + ' de ' + pagePorCobrar.totalPages}"></small>
+                    <div class="d-flex gap-1">
+                        <a th:if="${pagePorCobrar.hasPrevious()}"
+                           th:href="@{/pagos(anio=${filtro.anio}, mes=${filtro.mes}, tab='por-vencer', page=${pagePorCobrar.number - 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, estado=${filtro.estado})}"
+                           class="btn btn-sm btn-gajog-ghost">Anterior</a>
+                        <a th:if="${pagePorCobrar.hasNext()}"
+                           th:href="@{/pagos(anio=${filtro.anio}, mes=${filtro.mes}, tab='por-vencer', page=${pagePorCobrar.number + 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, estado=${filtro.estado})}"
+                           class="btn btn-sm btn-gajog-ghost">Siguiente</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN DE ALERTA: ALUMNOS EN RIESGO DE RETIRO (SUPERARON PLAZO DE GRACIA) -->
+            <div class="card border-danger" th:if="${!#lists.isEmpty(enRiesgoRetiro)}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-danger">⚠️ Alumnos en riesgo de retiro por mora (plazo de gracia superado)</span>
+                    </div>
+                    <span class="status-pill status-danger" th:text="${#lists.size(enRiesgoRetiro) + ' casos'}">0</span>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Alumno</th>
+                                <th>Periodo vencido</th>
+                                <th>Fecha de vencimiento</th>
+                                <th>Monto</th>
+                                <th class="text-end">Decisión administrativa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="mr : ${enRiesgoRetiro}">
+                                <td class="fw-bold" th:text="${mr.alumno.persona.nombres + ' ' + mr.alumno.persona.apellidos}"></td>
+                                <td th:text="${mr.mes + '/' + mr.anio}"></td>
+                                <td th:text="${#temporals.format(mr.fechaVencimiento, 'dd/MM/yyyy')}"></td>
+                                <td class="fw-bold" th:text="${'S/ ' + #numbers.formatDecimal(mr.monto, 1, 2)}"></td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-gajog-primary btn-precargar-cobro"
+                                                th:attr="data-mensualidad-id=${mr.id},
+                                                         data-alumno-id=${mr.alumno.id},
+                                                         data-alumno-nombre=${mr.alumno.persona.nombres + ' ' + mr.alumno.persona.apellidos},
+                                                         data-anio=${mr.anio},
+                                                         data-mes=${mr.mes},
+                                                         data-monto=${mr.monto}">
+                                            Regularizar pago
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal" th:data-bs-target="${'#modalRetiroMora' + mr.id}">
+                                            Confirmar retiro por mora
+                                        </button>
+                                    </div>
+
+                                    <!-- Modal Confirmar Retiro por Mora -->
+                                    <div class="modal fade text-start" th:id="${'modalRetiroMora' + mr.id}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content rounded-4">
+                                                <form th:action="@{/pagos/mora/{alumnoId}/retirar(alumnoId=${mr.alumno.id})}" method="post">
+                                                    <div class="modal-header border-bottom border-secondary">
+                                                        <h5 class="modal-title fw-bold">Confirmar retiro por mora</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="anio" th:value="${filtro.anio}">
+                                                        <input type="hidden" name="mes" th:value="${filtro.mes}">
+                                                        <p class="small text-muted">
+                                                            El alumno <strong th:text="${mr.alumno.persona.nombres + ' ' + mr.alumno.persona.apellidos}"></strong>
+                                                            pasará a estado <strong>RETIRADO</strong> sin perder su historial de grados ni asistencias.
+                                                            Podrá reincorporarse cuando regularice su pago.
+                                                        </p>
+                                                        <div class="mb-2">
+                                                            <label class="form-label">Motivo del retiro *</label>
+                                                            <textarea name="motivo" class="form-control" rows="2" required
+                                                                      th:text="${'Retiro por mora de la mensualidad ' + mr.mes + '/' + mr.anio}"></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-top border-secondary">
+                                                        <button type="button" class="btn btn-gajog-ghost" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger">Confirmar retiro</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+        </main>
+    </div>
+</div>
+
+<!-- OFFCANVAS FORMULARIO "NUEVO PAGO" (REHECHO CON AUTOCOMPLETADO Y TARIFA POR CATEGORÍA) -->
+<div class="offcanvas offcanvas-end text-bg-dark border-start border-secondary"
+     tabindex="-1" id="offcanvasNuevoPago" aria-labelledby="offcanvasNuevoPagoLabel" style="width: 440px;">
+    <div class="offcanvas-header border-bottom border-secondary">
+        <div>
+            <div class="gajog-eyebrow">REGISTRAR PAGO RECIBIDO</div>
+            <h5 class="offcanvas-title fw-bold" id="offcanvasNuevoPagoLabel">Nuevo pago de mensualidad</h5>
         </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form th:action="@{/pagos/registrar}" th:object="${formPago}" method="post" id="formNuevoPago">
+            <input type="hidden" th:field="*{mensualidadId}" id="inputMensualidadId">
+            <input type="hidden" th:field="*{alumnoId}" id="inputAlumnoId">
+            <input type="hidden" th:field="*{returnUrl}">
+
+            <!-- Buscador con Autocompletado de Alumno -->
+            <div class="mb-3">
+                <label for="buscadorAlumnoPago" class="form-label">Alumno (buscar por nombre o DNI) *</label>
+                <input type="text" id="buscadorAlumnoPago" list="datalistAlumnosPago"
+                       class="form-control" placeholder="Escribe nombre o DNI del alumno..." autocomplete="off" required>
+                <datalist id="datalistAlumnosPago">
+                    <option th:each="al : ${alumnosAutocompletado}"
+                            th:value="${al.nombreCompleto + ' (' + al.dniEnmascarado + ')'}"
+                            th:attr="data-id=${al.id},
+                                     data-tarifa=${al.tarifaSugerida},
+                                     data-categoria=${al.categoriaNombre},
+                                     data-estado=${al.estado}"></option>
+                </datalist>
+                <small id="infoCategoriaAlumno" class="text-muted d-block mt-1">
+                    Selecciona un alumno para cargar automáticamente la tarifa de su categoría.
+                </small>
+            </div>
+
+            <!-- Casilla de Reincorporación si el alumno está RETIRADO o INACTIVO -->
+            <div id="alertaReincorporacion" class="gajog-info-note mb-3 d-none">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" th:field="*{reincorporarAlumno}" id="chkReincorporar">
+                    <label class="form-check-label small fw-semibold" for="chkReincorporar">
+                        El alumno figura retirado/inactivo. Reincorporar a estado ACTIVO al registrar este pago.
+                    </label>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-7">
+                    <label for="inputMesPago" class="form-label">Mes del periodo *</label>
+                    <select id="inputMesPago" th:field="*{mes}" class="form-select" required>
+                        <option th:each="entry : ${mesesCatalogo}"
+                                th:value="${entry.key}" th:text="${entry.value}"></option>
+                    </select>
+                </div>
+                <div class="col-5">
+                    <label for="inputAnioPago" class="form-label">Año *</label>
+                    <input id="inputAnioPago" type="number" th:field="*{anio}" class="form-control" min="2020" max="2100" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="inputMontoPago" class="form-label">Monto recibido (S/) *</label>
+                <input id="inputMontoPago" type="number" step="0.01" min="0.01" th:field="*{monto}"
+                       class="form-control" th:readonly="${!puedeEditarMonto}" required>
+                <small class="text-muted" th:if="${!puedeEditarMonto}">Monto asignado automáticamente por tarifa de categoría.</small>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="inputFechaPago" class="form-label">Fecha del pago *</label>
+                    <input id="inputFechaPago" type="date" th:field="*{fechaPago}" class="form-control" required>
+                </div>
+                <div class="col-6">
+                    <label for="inputMedioPago" class="form-label">Medio de pago *</label>
+                    <select id="inputMedioPago" th:field="*{medioPago}" class="form-select" required>
+                        <option th:each="mp : ${mediosPago}" th:value="${mp}" th:text="${mp}"></option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="inputNumOperacion" class="form-label">Número de operación (opcional)</label>
+                <input id="inputNumOperacion" type="text" th:field="*{numeroOperacion}"
+                       class="form-control" maxlength="60" placeholder="Ej. Yape / Plin / Transferencia">
+            </div>
+
+            <div class="mb-4">
+                <label for="inputObsPago" class="form-label">Observación (opcional)</label>
+                <textarea id="inputObsPago" th:field="*{observacion}" class="form-control" rows="2" maxlength="500"
+                          placeholder="Nota interna de caja"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-gajog-primary w-100 py-2">Registrar pago &rarr;</button>
+        </form>
     </div>
 </div>
 
 <div th:replace="~{fragments/layout :: scripts}"></div>
+
+<script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+        const offcanvasEl = document.getElementById('offcanvasNuevoPago');
+        const bsOffcanvas = offcanvasEl ? new bootstrap.Offcanvas(offcanvasEl) : null;
+
+        const inputBuscador = document.getElementById('buscadorAlumnoPago');
+        const inputAlumnoId = document.getElementById('inputAlumnoId');
+        const inputMensualidadId = document.getElementById('inputMensualidadId');
+        const inputMonto = document.getElementById('inputMontoPago');
+        const inputMes = document.getElementById('inputMesPago');
+        const inputAnio = document.getElementById('inputAnioPago');
+        const infoCategoria = document.getElementById('infoCategoriaAlumno');
+        const alertaReincorp = document.getElementById('alertaReincorporacion');
+        const opcionesDatalist = document.querySelectorAll('#datalistAlumnosPago option');
+
+        function sincronizarAlumnoPorId(idBuscado) {
+            if (!idBuscado) return;
+            opcionesDatalist.forEach(opt => {
+                if (opt.getAttribute('data-id') === String(idBuscado)) {
+                    inputBuscador.value = opt.value;
+                    aplicarDatosOpcion(opt, false);
+                }
+            });
+        }
+
+        function aplicarDatosOpcion(opt, sobrescribirMonto) {
+            const id = opt.getAttribute('data-id');
+            const tarifa = opt.getAttribute('data-tarifa');
+            const categoria = opt.getAttribute('data-categoria');
+            const estado = opt.getAttribute('data-estado');
+
+            inputAlumnoId.value = id;
+            if (sobrescribirMonto && tarifa) {
+                inputMonto.value = tarifa;
+            }
+            if (infoCategoria) {
+                infoCategoria.textContent = 'Categoría: ' + categoria + ' · Tarifa vigente: S/ ' + tarifa;
+            }
+            if (alertaReincorp) {
+                if (estado && estado !== 'ACTIVO') {
+                    alertaReincorp.classList.remove('d-none');
+                } else {
+                    alertaReincorp.classList.add('d-none');
+                }
+            }
+        }
+
+        if (inputBuscador) {
+            inputBuscador.addEventListener('input', function () {
+                const val = this.value;
+                inputMensualidadId.value = '';
+                opcionesDatalist.forEach(opt => {
+                    if (opt.value === val) {
+                        aplicarDatosOpcion(opt, true);
+                    }
+                });
+            });
+        }
+
+        // Botones "Cobrar" de la tabla que abren el Offcanvas precargado
+        document.querySelectorAll('.btn-precargar-cobro').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const mId = this.getAttribute('data-mensualidad-id');
+                const aId = this.getAttribute('data-alumno-id');
+                const anio = this.getAttribute('data-anio');
+                const mes = this.getAttribute('data-mes');
+                const monto = this.getAttribute('data-monto');
+
+                inputMensualidadId.value = mId;
+                inputAlumnoId.value = aId;
+                inputAnio.value = anio;
+                inputMes.value = mes;
+                inputMonto.value = monto;
+                sincronizarAlumnoPorId(aId);
+
+                if (bsOffcanvas) {
+                    bsOffcanvas.show();
+                }
+            });
+        });
+
+        // Si se llegó desde /pagos/nuevo?alumnoId=X&mensualidadId=Y, abrir automáticamente
+        const abrirAuto = /*[[${abrirFormulario}]]*/ false;
+        const alumnoInicial = /*[[${formPago.alumnoId}]]*/ null;
+        if (alumnoInicial) {
+            sincronizarAlumnoPorId(alumnoInicial);
+        }
+        if (abrirAuto && bsOffcanvas) {
+            bsOffcanvas.show();
+        }
+    });
+</script>
 </body>
 </html>

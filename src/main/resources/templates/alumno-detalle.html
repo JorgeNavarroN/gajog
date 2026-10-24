@@ -1,127 +1,285 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Perfil del Alumno - GAJOG TKD</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+<head th:replace="~{fragments/layout :: head('Expediente del Alumno')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('alumnos')}"></aside>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold" th:href="@{/}">🥋 GAJOG TKD</a>
-        <div class="navbar-nav">
-            <a class="nav-link" th:href="@{/}">Inicio</a>
-            <a class="nav-link active" th:href="@{/alumnos}">Alumnos</a>
-            <a class="nav-link" th:href="@{/personal}">Instructores y Apoderados</a>
-            <a class="nav-link" th:href="@{/matriculas}">Matrículas</a>
-            <a class="nav-link" th:href="@{/pagos}">Pagos</a>
-            <a class="nav-link" th:href="@{/asistencias}">Asistencias</a>
-            <a class="nav-link" th:href="@{/examenes}">Exámenes</a>
-        </div>
-    </div>
-</nav>
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Expediente del Alumno')}"></header>
 
-<div class="container">
-    <div class="mb-3">
-        <a th:href="@{/alumnos}" class="btn btn-outline-secondary btn-sm">← Volver al listado de alumnos</a>
-    </div>
+        <main class="gajog-content">
+            <!-- Encabezado y Botones de Acción Rápida Arriba -->
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div th:replace="~{fragments/ui :: pageHeader('EXPEDIENTE INTEGRAL', ${alumno.persona.nombres + ' ' + alumno.persona.apellidos}, 'Datos personales, apoderado, categoría actual, cinturón, mensualidades, asistencias y observaciones.')}"></div>
 
-    <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
-    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a th:href="@{/pagos/nuevo(alumnoId=${alumno.id}, returnUrl=${'/alumnos/' + alumno.id})}"
+                       class="btn btn-gajog-primary">💳 Registrar pago</a>
+                    <a th:href="@{/matriculas/nueva(alumnoId=${alumno.id})}"
+                       class="btn btn-gajog-ghost">🪪 Matricular / Cambiar grupo</a>
+                    <a th:href="@{/examenes}"
+                       class="btn btn-gajog-ghost">🏅 Programar examen</a>
 
-    <!-- Ficha Principal del Alumno -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h3 class="fw-bold mb-1" th:text="${alumno.persona.nombres + ' ' + alumno.persona.apellidos}"></h3>
-                    <p class="text-muted mb-2">
-                        DNI: <strong th:text="${alumno.persona.dni}"></strong> |
-                        Fecha Nac.: <strong th:text="${alumno.persona.fechaNacimiento}"></strong> |
-                        Ingreso: <strong th:text="${alumno.fechaIngreso}"></strong>
-                    </p>
-                    <p class="mb-0" th:if="${alumno.apoderado != null}">
-                        Apoderado: <span class="badge bg-info text-dark"
-                                         th:text="${alumno.apoderado.persona.nombres + ' ' + alumno.apoderado.persona.apellidos + ' (Tel: ' + alumno.apoderado.persona.telefono + ')'}"></span>
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <span class="badge bg-dark fs-6 p-2"
-                          th:text="${'Grado Actual: ' + (alumno.cinturonActual != null ? alumno.cinturonActual.nombre : 'Sin cinturón')}"></span>
+                    <form th:if="${alumno.estado.name() == 'ACTIVO'}"
+                          th:action="@{/alumnos/{id}/estado(id=${alumno.id})}" method="post"
+                          data-confirm="¿Deseas dar de baja temporalmente a este alumno?">
+                        <input type="hidden" name="nuevoEstado" value="INACTIVO">
+                        <input type="hidden" name="origen" value="expediente">
+                        <button type="submit" class="btn btn-outline-warning">Dar de baja</button>
+                    </form>
+                    <form th:if="${alumno.estado.name() != 'ACTIVO'}"
+                          th:action="@{/alumnos/{id}/estado(id=${alumno.id})}" method="post">
+                        <input type="hidden" name="nuevoEstado" value="ACTIVO">
+                        <input type="hidden" name="origen" value="expediente">
+                        <button type="submit" class="btn btn-outline-success">Reactivar alumno</button>
+                    </form>
+
+                    <a th:href="@{/alumnos}" class="btn btn-gajog-ghost">&larr; Padrón</a>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="row g-4">
-        <!-- Columna Izquierda: Historial de Cinturones -->
-        <div class="col-md-5">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white fw-bold">Historial de Cinturones (Ascensos)</div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center"
-                            th:each="hc : ${historialCinturones}">
-                            <div>
-                                <strong th:text="${hc.cinturon.nombre}"></strong>
-                                <div class="small text-muted"
-                                     th:text="${hc.examen != null ? 'Por Examen (Puntaje: ' + hc.examen.puntajeTotal + ')' : 'Grado Inicial de Ingreso'}"></div>
-                            </div>
-                            <span class="badge bg-secondary" th:text="${hc.fechaObtencion}"></span>
-                        </li>
-                        <li class="list-group-item text-center text-muted" th:if="${#lists.isEmpty(historialCinturones)}">
-                            Sin registros de cinturones.
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Columna Derecha: Observaciones de Progreso del Instructor -->
-        <div class="col-md-7">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white fw-bold">Registrar Observación de Progreso</div>
-                <div class="card-body">
-                    <form th:action="@{/alumnos/{id}/observacion(id=${alumno.id})}" method="post">
-                        <div class="mb-2">
-                            <label class="form-label">Instructor Evaluador</label>
-                            <select name="instructorId" class="form-select" required>
-                                <option value="">-- Seleccione Instructor --</option>
-                                <option th:each="ins : ${instructores}"
-                                        th:value="${ins.id}"
-                                        th:text="${ins.persona.nombres + ' ' + ins.persona.apellidos}"></option>
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Observación Técnica / Conductual</label>
-                            <textarea name="observacion" class="form-control" rows="2" maxlength="1000"
-                                      placeholder="Ej. Mejoró postura en Ap Chagi y coordinación en Poomsae 1..." required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm">Guardar Observación</button>
+            <!-- Alerta de Cambio de Categoría por Edad (No cambia en silencio) -->
+            <div th:if="${exp.requiereReasignacionCategoria}" class="card border-warning mb-4">
+                <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h6 class="fw-bold text-warning mb-1">⚠️ Aviso de cambio de categoría por edad</h6>
+                        <p class="small mb-0">
+                            El alumno cumplió <strong th:text="${exp.edadActual + ' años'}"></strong> y supera el rango de su categoría actual
+                            (<strong th:text="${exp.matriculaActiva.categoria.nombre + ': ' + exp.matriculaActiva.categoria.edadMinima + '-' + exp.matriculaActiva.categoria.edadMaxima + ' años'}"></strong>).
+                            Categoría sugerida: <strong th:text="${exp.categoriaSugeridaPorEdad != null ? exp.categoriaSugeridaPorEdad.nombre : 'Consultar administración'}"></strong>.
+                        </p>
+                    </div>
+                    <form th:action="@{/alumnos/{id}/reasignar-grupo(id=${alumno.id})}" method="post" class="d-flex flex-wrap gap-2 align-items-center">
+                        <select name="nuevoHorarioId" class="form-select form-select-sm w-auto" required>
+                            <option value="">-- Elegir nuevo grupo --</option>
+                            <option th:each="h : ${exp.horariosReasignacion}" th:value="${h.id}"
+                                    th:text="${h.categoria.nombre + ' · ' + h.diaSemana + ' (' + h.horaInicio + ' - ' + h.horaFin + ') · ' + h.sala}"></option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-warning fw-bold text-dark">Reasignar grupo</button>
                     </form>
                 </div>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold">Bitácora de Progreso</div>
-                <div class="card-body">
-                    <div th:each="obs : ${observaciones}" class="border-bottom pb-2 mb-2">
-                        <div class="d-flex justify-content-between small text-muted">
-                            <span class="fw-bold text-dark"
-                                  th:text="${'Instructor: ' + obs.instructor.persona.nombres + ' ' + obs.instructor.persona.apellidos}"></span>
-                            <span th:text="${obs.fecha}"></span>
+            <div class="row g-4">
+                <!-- Columna Izquierda: Datos Personales, Apoderado, Grupo Actual y Bitácora -->
+                <div class="col-lg-4">
+                    <div class="card mb-4">
+                        <div class="card-header fw-bold">Datos personales y grupo actual</div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">DNI:</span>
+                                <strong th:text="${alumno.persona.dni}"></strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Nacimiento / Edad:</span>
+                                <strong th:text="${alumno.persona.fechaNacimiento + ' (' + exp.edadActual + ' años)'}"></strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Teléfono:</span>
+                                <span th:text="${alumno.persona.telefono ?: '-'}"></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Estado:</span>
+                                <span th:replace="~{fragments/ui :: statusBadge(${alumno.estado}, ${alumno.estado.name() == 'ACTIVO' ? 'success' : (alumno.estado.name() == 'INACTIVO' ? 'warning' : 'danger')})}"></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Cinturón actual:</span>
+                                <span th:if="${alumno.cinturonActual != null}" class="cinturon-badge"
+                                      th:classappend="${'cinturon-' + alumno.cinturonActual.color}"
+                                      th:text="${alumno.cinturonActual.nombre}"></span>
+                            </div>
+
+                            <hr class="border-secondary">
+
+                            <div class="small text-muted mb-1">Categoría y horario activo</div>
+                            <div th:if="${exp.matriculaActiva != null}">
+                                <div class="fw-bold" th:text="${exp.matriculaActiva.categoria.nombre}"></div>
+                                <div class="small" th:text="${exp.matriculaActiva.horario.diaSemana + ' · ' + exp.matriculaActiva.horario.horaInicio + ' a ' + exp.matriculaActiva.horario.horaFin}"></div>
+                                <small class="text-muted" th:text="${exp.matriculaActiva.horario.sala}"></small>
+                            </div>
+                            <div th:if="${exp.matriculaActiva == null}" class="small text-muted">
+                                Sin grupo activo asignado.
+                            </div>
+
+                            <hr class="border-secondary">
+
+                            <div class="small text-muted mb-1">Apoderado responsable</div>
+                            <div th:if="${alumno.apoderado != null}">
+                                <div class="fw-bold" th:text="${alumno.apoderado.persona.nombres + ' ' + alumno.apoderado.persona.apellidos}"></div>
+                                <div class="small text-muted" th:text="${'DNI: ' + alumno.apoderado.persona.dni + ' · Tel: ' + (alumno.apoderado.persona.telefono ?: '-')}"></div>
+                            </div>
+                            <div th:if="${alumno.apoderado == null}" class="text-muted small">
+                                Mayor de edad / Sin apoderado registrado
+                            </div>
                         </div>
-                        <p class="mb-0 mt-1" th:text="${obs.observacion}"></p>
                     </div>
-                    <p class="text-center text-muted mb-0" th:if="${#lists.isEmpty(observaciones)}">
-                        Aún no hay observaciones registradas para este alumno.
-                    </p>
+
+                    <div class="card">
+                        <div class="card-header fw-bold">Añadir observación técnica</div>
+                        <div class="card-body">
+                            <form th:action="@{/alumnos/{id}/observacion(id=${alumno.id})}" method="post">
+                                <div class="mb-3">
+                                    <label for="instructorId" class="form-label">Instructor evaluador *</label>
+                                    <select id="instructorId" name="instructorId" class="form-select" required>
+                                        <option th:each="ins : ${exp.instructores}" th:value="${ins.id}"
+                                                th:text="${ins.persona.nombres + ' ' + ins.persona.apellidos}"></option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="observacion" class="form-label">Observación de progreso *</label>
+                                    <textarea id="observacion" name="observacion" class="form-control" rows="3"
+                                              placeholder="Ej. Mejoró la técnica de patada y mantuvo buena coordinación." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-gajog-primary w-100">Guardar observación</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Mensualidades, Asistencias (con %), Historial de Cinturones y Observaciones -->
+                <div class="col-lg-8">
+                    <!-- 1. Estado de Mensualidades -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="fw-bold">💳 Estado de mensualidades</span>
+                            <a th:href="@{/pagos/nuevo(alumnoId=${alumno.id}, returnUrl=${'/alumnos/' + alumno.id})}"
+                               class="btn btn-sm btn-gajog-primary">+ Nuevo pago</a>
+                        </div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Periodo</th>
+                                        <th>Vencimiento</th>
+                                        <th>Monto</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="m : ${exp.mensualidades}">
+                                        <td class="fw-semibold" th:text="${m.mes + '/' + m.anio}"></td>
+                                        <td th:text="${m.fechaVencimiento}"></td>
+                                        <td th:text="${'S/ ' + #numbers.formatDecimal(m.monto, 1, 2)}"></td>
+                                        <td>
+                                            <span th:replace="~{fragments/ui :: statusBadge(${m.estado.etiqueta}, ${m.estado.name() == 'PAGADA' ? 'success' : (m.estado.name() == 'VENCIDA' ? 'danger' : 'warning')})}"></span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a th:if="${m.estado.name() != 'PAGADA'}"
+                                               th:href="@{/pagos/nuevo(alumnoId=${alumno.id}, mensualidadId=${m.id}, returnUrl=${'/alumnos/' + alumno.id})}"
+                                               class="btn btn-sm btn-gajog-primary">Cobrar &rarr;</a>
+                                            <span th:if="${m.estado.name() == 'PAGADA'}" class="small text-muted">Pagado</span>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(exp.mensualidades)}">
+                                        <td colspan="5" class="text-center text-muted py-3 small">Sin cuotas registradas.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 2. Últimas Asistencias, % de Asistencia y Elegibilidad de Examen -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <span class="fw-bold">☑️ Asistencia y elegibilidad de examen</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span th:replace="~{fragments/ui :: statusBadge(${'Asistencia: ' + exp.porcentajeAsistencia + '% (' + exp.totalAsistenciasEfectivas + '/' + exp.totalSesionesEvaluadas + ')'}, ${exp.elegibleExamenPorAsistencia ? 'success' : 'warning'})}"></span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="gajog-info-note mb-3">
+                                <div th:if="${exp.elegibleExamenPorAsistencia}">
+                                    ✅ <strong>Elegible por asistencia para examen de ascenso:</strong>
+                                    Cumple con el mínimo requerido de <strong th:text="${exp.asistenciaMinimaRequerida + '%'}">75%</strong>
+                                    (Antigüedad en el grado: <span th:text="${exp.mesesAntiguedad + ' mes(es)'}"></span>).
+                                </div>
+                                <div th:if="${!exp.elegibleExamenPorAsistencia}">
+                                    ⚠️ <strong>Alerta de elegibilidad para examen:</strong>
+                                    El alumno registra <strong th:text="${exp.porcentajeAsistencia + '%'}">0%</strong> de asistencia
+                                    y el mínimo configurable para postular a examen de grado es <strong th:text="${exp.asistenciaMinimaRequerida + '%'}">75%</strong>.
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha de sesión</th>
+                                            <th>Grupo</th>
+                                            <th>Hora ingreso</th>
+                                            <th>Método</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="as : ${exp.ultimasAsistencias}">
+                                            <td th:text="${as.sesion.fecha}"></td>
+                                            <td th:text="${as.sesion.horario.categoria.nombre + ' · ' + as.sesion.horario.diaSemana}"></td>
+                                            <td th:text="${as.horaIngreso != null ? #temporals.format(as.horaIngreso, 'HH:mm') : '-'}"></td>
+                                            <td><span class="badge bg-secondary" th:text="${as.metodoRegistro}"></span></td>
+                                            <td>
+                                                <span th:replace="~{fragments/ui :: statusBadge(${as.estado}, ${as.estado.name() == 'PRESENTE' ? 'success' : (as.estado.name() == 'TARDANZA' ? 'warning' : 'danger')})}"></span>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(exp.ultimasAsistencias)}">
+                                            <td colspan="5" class="text-center text-muted py-3 small">Aún no registra asistencias en sesiones.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Historial de Cinturones -->
+                    <div class="card mb-4">
+                        <div class="card-header fw-bold">🥋 Historial de cinturones y ascensos</div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Grado obtenido</th>
+                                        <th>Fecha</th>
+                                        <th>Origen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="h : ${exp.historialCinturones}">
+                                        <td>
+                                            <span class="cinturon-badge"
+                                                  th:classappend="${'cinturon-' + h.cinturon.color}"
+                                                  th:text="${h.cinturon.nombre}"></span>
+                                        </td>
+                                        <td th:text="${h.fechaObtencion}"></td>
+                                        <td th:text="${h.examen != null ? 'Examen aprobado (' + h.examen.puntajeTotal + ' pts)' : 'Grado inicial'}"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 4. Bitácora de Observaciones -->
+                    <div class="card">
+                        <div class="card-header fw-bold">📝 Observaciones de progreso</div>
+                        <div class="card-body">
+                            <div th:if="${#lists.isEmpty(exp.observaciones)}" class="small text-muted">
+                                Sin observaciones técnicas registradas.
+                            </div>
+                            <div th:each="obs : ${exp.observaciones}" class="border-bottom border-secondary pb-3 mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <strong th:text="${obs.instructor.persona.nombres + ' ' + obs.instructor.persona.apellidos}"></strong>
+                                    <small class="text-muted" th:text="${obs.fecha}"></small>
+                                </div>
+                                <p class="mb-0 small" th:text="${obs.observacion}"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 </div>
-
+<div th:replace="~{fragments/layout :: scripts}"></div>
 </body>
 </html>

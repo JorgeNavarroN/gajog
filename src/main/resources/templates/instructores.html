@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Instructores')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('instructores')}"></aside>
+
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Instructores')}"></header>
+
+        <main class="gajog-content">
+            <div th:replace="~{fragments/ui :: pageHeader('PERSONAL DOCENTE', 'Instructores (Sabonim)', 'Gestiona la plana docente autorizada para dirigir sesiones y evaluar el progreso técnico.')}"></div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header fw-bold">Registrar instructor</div>
+                        <div class="card-body">
+                            <form th:action="@{/instructores/guardar}" method="post">
+                                <div class="mb-2">
+                                    <label for="dniIns" class="form-label">DNI *</label>
+                                    <input id="dniIns" type="text" name="dni" class="form-control" maxlength="15" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="nomIns" class="form-label">Nombres *</label>
+                                    <input id="nomIns" type="text" name="nombres" class="form-control" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="apeIns" class="form-label">Apellidos *</label>
+                                    <input id="apeIns" type="text" name="apellidos" class="form-control" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="telIns" class="form-label">Teléfono</label>
+                                    <input id="telIns" type="text" name="telefono" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="corIns" class="form-label">Correo electrónico</label>
+                                    <input id="corIns" type="email" name="correo" class="form-control">
+                                </div>
+                                <button type="submit" class="btn btn-gajog-primary w-100">Guardar instructor &rarr;</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div th:replace="~{fragments/ui :: tableToolbar('Plana docente activa', 'buscadorInstructores', '#tablaInstructores', '🔍 Buscar instructor...')}"></div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-hover align-middle" id="tablaInstructores">
+                                <thead>
+                                    <tr>
+                                        <th>DNI</th>
+                                        <th>Instructor</th>
+                                        <th>Teléfono</th>
+                                        <th>Correo</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="ins : ${instructores}">
+                                        <td th:text="${ins.persona.dni}"></td>
+                                        <td class="fw-bold" th:text="${ins.persona.nombres + ' ' + ins.persona.apellidos}"></td>
+                                        <td th:text="${ins.persona.telefono ?: '-'}"></td>
+                                        <td th:text="${ins.persona.correo ?: '-'}"></td>
+                                        <td><span th:replace="~{fragments/ui :: statusBadge('Sabonim Oficial', 'success')}"></span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

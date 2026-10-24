@@ -1,113 +1,202 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Gestión de Alumnos - GAJOG TKD</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+<head th:replace="~{fragments/layout :: head('Alumnos')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('alumnos')}"></aside>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold" th:href="@{/}">🥋 GAJOG TKD</a>
-        <div class="navbar-nav">
-            <a class="nav-link" th:href="@{/}">Inicio</a>
-            <a class="nav-link active" th:href="@{/alumnos}">Alumnos</a>
-            <a class="nav-link" th:href="@{/matriculas}">Matrículas</a>
-            <a class="nav-link" th:href="@{/pagos}">Pagos</a>
-            <a class="nav-link" th:href="@{/asistencias}">Asistencias</a>
-            <a class="nav-link" th:href="@{/examenes}">Exámenes</a>
-        </div>
-    </div>
-</nav>
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Alumnos')}"></header>
 
-<div class="container">
-    <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
-    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <main class="gajog-content">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div th:replace="~{fragments/ui :: pageHeader('GESTIÓN ACADÉMICA', 'Padrón de alumnos', 'Filtra por categoría, horario, cinturón o estado de mensualidad y ejecuta acciones rápidas por estudiante.')}"></div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/matriculas/nueva(reiniciar=true)}" class="btn btn-gajog-primary">+ Nueva matrícula (3 pasos)</a>
+                    <a th:href="@{/reportes/alumnos/excel(q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, estado=${filtro.estado}, cinturonId=${filtro.cinturonId}, estadoMensualidad=${filtro.estadoMensualidad}, sortBy=${filtro.campoOrden()}, sortDir=${filtro.direccionOrden()})}"
+                    class="btn btn-gajog-ghost">📊 Exportar Excel</a>
+                    <a th:href="@{/reportes/alumnos/pdf(q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, estado=${filtro.estado}, cinturonId=${filtro.cinturonId}, estadoMensualidad=${filtro.estadoMensualidad}, sortBy=${filtro.campoOrden()}, sortDir=${filtro.direccionOrden()})}"
+                    class="btn btn-gajog-ghost">📄 Exportar PDF</a>
+                </div>
+            </div>
 
-    <div class="row g-4">
-        <!-- Formulario Nuevo Alumno -->
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white fw-bold">Registrar Nuevo Alumno</div>
-                <div class="card-body">
-                    <form th:action="@{/alumnos/guardar}" method="post">
-                        <div class="mb-2">
-                            <label class="form-label">DNI</label>
-                            <input type="text" name="dni" class="form-control" maxlength="15" required>
+            <!-- Barra de Búsqueda y Filtros Combinables en Servidor -->
+            <div class="card mb-4">
+                <div class="card-body py-3">
+                    <form th:action="@{/alumnos}" method="get" class="row g-2 align-items-end">
+                        <div class="col-12 col-md-3">
+                            <label for="qAlumno" class="form-label small mb-1">Buscar (Nombre, Apellidos o DNI)</label>
+                            <input id="qAlumno" type="search" name="q" class="form-control form-control-sm"
+                                   placeholder="🔍 Ej. Valeria Mendoza o 7458..." th:value="${filtro.q}">
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label">Nombres</label>
-                            <input type="text" name="nombres" class="form-control" required>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Apellidos</label>
-                            <input type="text" name="apellidos" class="form-control" required>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Fecha de Nacimiento</label>
-                            <input type="date" name="fechaNacimiento" class="form-control" required>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Teléfono</label>
-                            <input type="text" name="telefono" class="form-control">
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Correo</label>
-                            <input type="email" name="correo" class="form-control">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Cinturón Inicial</label>
-                            <select name="cinturonInicialId" class="form-select" required>
-                                <option th:each="c : ${cinturones}"
-                                        th:value="${c.id}"
-                                        th:text="${c.nombre}"></option>
+
+                        <div class="col-6 col-md-2">
+                            <label for="catFiltro" class="form-label small mb-1">Categoría</label>
+                            <select id="catFiltro" name="categoriaId" class="form-select form-select-sm">
+                                <option value="">Todas</option>
+                                <option th:each="c : ${categorias}" th:value="${c.id}"
+                                        th:text="${c.nombre}" th:selected="${c.id == filtro.categoriaId}"></option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Guardar Alumno</button>
+
+                        <div class="col-6 col-md-2">
+                            <label for="horFiltro" class="form-label small mb-1">Horario / Grupo</label>
+                            <select id="horFiltro" name="horarioId" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option th:each="h : ${horarios}" th:value="${h.id}"
+                                        th:text="${h.categoria.nombre + ' · ' + h.diaSemana + ' ' + h.horaInicio}"
+                                        th:selected="${h.id == filtro.horarioId}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-4 col-md-1">
+                            <label for="cinFiltro" class="form-label small mb-1">Cinturón</label>
+                            <select id="cinFiltro" name="cinturonId" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option th:each="cin : ${cinturones}" th:value="${cin.id}"
+                                        th:text="${cin.nombre}" th:selected="${cin.id == filtro.cinturonId}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-4 col-md-2">
+                            <label for="mensFiltro" class="form-label small mb-1">Mensualidad del mes</label>
+                            <select id="mensFiltro" name="estadoMensualidad" class="form-select form-select-sm">
+                                <option value="">Todas</option>
+                                <option value="PAGADA" th:selected="${filtro.estadoMensualidad != null && filtro.estadoMensualidad.name() == 'PAGADA'}">Pagado</option>
+                                <option value="POR_VENCER" th:selected="${filtro.estadoMensualidad != null && filtro.estadoMensualidad.name() == 'POR_VENCER'}">Por vencer</option>
+                                <option value="VENCIDA" th:selected="${filtro.estadoMensualidad != null && filtro.estadoMensualidad.name() == 'VENCIDA'}">Vencida – en riesgo</option>
+                            </select>
+                        </div>
+
+                        <div class="col-4 col-md-1">
+                            <label for="estFiltro" class="form-label small mb-1">Estado</label>
+                            <select id="estFiltro" name="estado" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option th:each="est : ${estadosAlumno}" th:value="${est}"
+                                        th:text="${est}" th:selected="${est == filtro.estado}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-1 d-flex gap-1">
+                            <button type="submit" class="btn btn-sm btn-gajog-primary w-100">Filtrar</button>
+                            <a th:href="@{/alumnos}" class="btn btn-sm btn-gajog-ghost" title="Limpiar filtros">✕</a>
+                        </div>
                     </form>
                 </div>
             </div>
-        </div>
 
-        <!-- Tabla de Alumnos -->
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold">Listado de Alumnos</div>
-                <div class="card-body table-responsive">
+            <!-- Tabla Paginada de Alumnos -->
+            <div class="card">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <span class="fw-bold" th:text="${'Alumnos encontrados (' + pageAlumnos.totalElements + ')'}">Listado</span>
+                    <div class="d-flex align-items-center gap-2 small">
+                        <span class="text-muted">Ordenar por:</span>
+                        <a th:href="@{/alumnos(q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, cinturonId=${filtro.cinturonId}, estado=${filtro.estado}, estadoMensualidad=${filtro.estadoMensualidad}, sortBy='apellidos', sortDir=${filtro.direccionOrden() == 'asc' ? 'desc' : 'asc'})}"
+                           class="btn btn-sm btn-gajog-ghost py-0 px-2">Apellidos ↕</a>
+                        <a th:href="@{/alumnos(q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, cinturonId=${filtro.cinturonId}, estado=${filtro.estado}, estadoMensualidad=${filtro.estadoMensualidad}, sortBy='fechaIngreso', sortDir=${filtro.direccionOrden() == 'asc' ? 'desc' : 'asc'})}"
+                           class="btn btn-sm btn-gajog-ghost py-0 px-2">Ingreso ↕</a>
+                    </div>
+                </div>
+
+                <div class="card-body p-0 table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
-                                <th>DNI</th>
                                 <th>Alumno</th>
-                                <th>Cinturón Actual</th>
-                                <th>Ingreso</th>
+                                <th>DNI / Edad</th>
+                                <th>Categoría y Grupo</th>
+                                <th>Cinturón</th>
+                                <th>Mensualidad</th>
                                 <th>Estado</th>
+                                <th class="text-end">Acciones rápidas</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="a : ${alumnos}">
-                                <td th:text="${a.persona.dni}"></td>
-                                <td th:text="${a.persona.nombres + ' ' + a.persona.apellidos}"></td>
+                            <tr th:each="a : ${pageAlumnos.content}">
                                 <td>
-                                    <span class="badge bg-secondary"
-                                          th:text="${a.cinturonActual != null ? a.cinturonActual.nombre : 'Sin asignar'}"></span>
+                                    <div class="fw-bold" th:text="${a.nombreCompleto()}"></div>
+                                    <small class="text-muted" th:text="${'Ingreso: ' + a.fechaIngreso}"></small>
                                 </td>
-                                <td th:text="${a.fechaIngreso}"></td>
                                 <td>
-                                    <span class="badge bg-success" th:text="${a.estado}"></span>
+                                    <div th:text="${a.dniMostrado}"></div>
+                                    <small class="text-muted" th:text="${a.edad + ' años'}"></small>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold" th:text="${a.categoriaActual}"></div>
+                                    <small class="text-muted" th:text="${a.horarioActual}"></small>
+                                    <div th:if="${a.requiereCambioCategoria}" class="mt-1">
+                                        <a th:href="@{/alumnos/{id}(id=${a.id})}" class="badge bg-warning text-dark text-decoration-none">
+                                            ⚠️ Edad fuera de rango · Reasignar
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span th:if="${a.cinturonActual != null}" class="cinturon-badge"
+                                          th:classappend="${'cinturon-' + a.cinturonActual.color}"
+                                          th:text="${a.cinturonActual.nombre}"></span>
+                                </td>
+                                <td>
+                                    <span th:replace="~{fragments/ui :: statusBadge(${a.estadoMensualidadEtiqueta}, ${a.estadoMensualidadVariante})}"></span>
+                                </td>
+                                <td>
+                                    <span th:replace="~{fragments/ui :: statusBadge(${a.estado}, ${a.estado.name() == 'ACTIVO' ? 'success' : (a.estado.name() == 'INACTIVO' ? 'warning' : 'danger')})}"></span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+                                        <a th:href="@{/alumnos/{id}(id=${a.id})}" class="btn btn-sm btn-gajog-ghost" title="Ver expediente completo">
+                                            Expediente
+                                        </a>
+                                        <a th:href="@{/pagos/nuevo(alumnoId=${a.id}, returnUrl='/alumnos')}"
+                                           class="btn btn-sm btn-gajog-primary" title="Registrar pago con alumno precargado">
+                                            💳 Pagar
+                                        </a>
+                                        <a th:href="@{/asistencias}" class="btn btn-sm btn-gajog-ghost" title="Pasar asistencia">
+                                            ☑️ Asistencia
+                                        </a>
+                                        <a th:href="@{/matriculas/nueva(alumnoId=${a.id})}"
+                                           class="btn btn-sm btn-gajog-ghost" title="Matricular o cambiar de grupo">
+                                            🪪 Grupo
+                                        </a>
+                                        <form th:if="${a.estado.name() == 'ACTIVO'}"
+                                              th:action="@{/alumnos/{id}/estado(id=${a.id})}" method="post"
+                                              data-confirm="¿Deseas dar de baja temporalmente a este alumno?">
+                                            <input type="hidden" name="nuevoEstado" value="INACTIVO">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning">Baja</button>
+                                        </form>
+                                        <form th:if="${a.estado.name() != 'ACTIVO'}"
+                                              th:action="@{/alumnos/{id}/estado(id=${a.id})}" method="post">
+                                            <input type="hidden" name="nuevoEstado" value="ACTIVO">
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Reactivar</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
-                            <tr th:if="${#lists.isEmpty(alumnos)}">
-                                <td colspan="5" class="text-center text-muted">No hay alumnos registrados aún.</td>
+                            <tr th:if="${pageAlumnos.empty}" class="empty-row">
+                                <td colspan="7">
+                                    <div th:replace="~{fragments/ui :: emptyState('🥋', 'No se encontraron alumnos con estos filtros', 'Limpia los filtros o inicia una nueva matrícula en 3 pasos.')}"></div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Paginación en el Servidor -->
+                <div class="card-footer bg-transparent border-top border-secondary d-flex justify-content-between align-items-center py-2 px-3"
+                     th:if="${pageAlumnos.totalPages > 1}">
+                    <small class="text-muted" th:text="${'Página ' + (pageAlumnos.number + 1) + ' de ' + pageAlumnos.totalPages}"></small>
+                    <div class="d-flex gap-1">
+                        <a th:if="${pageAlumnos.hasPrevious()}"
+                           th:href="@{/alumnos(page=${pageAlumnos.number - 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, cinturonId=${filtro.cinturonId}, estado=${filtro.estado}, estadoMensualidad=${filtro.estadoMensualidad}, sortBy=${filtro.campoOrden()}, sortDir=${filtro.direccionOrden()})}"
+                           class="btn btn-sm btn-gajog-ghost">Anterior</a>
+                        <a th:if="${pageAlumnos.hasNext()}"
+                           th:href="@{/alumnos(page=${pageAlumnos.number + 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId}, cinturonId=${filtro.cinturonId}, estado=${filtro.estado}, estadoMensualidad=${filtro.estadoMensualidad}, sortBy=${filtro.campoOrden()}, sortDir=${filtro.direccionOrden()})}"
+                           class="btn btn-sm btn-gajog-ghost">Siguiente</a>
+                    </div>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 </div>
-
+<div th:replace="~{fragments/layout :: scripts}"></div>
 </body>
 </html>

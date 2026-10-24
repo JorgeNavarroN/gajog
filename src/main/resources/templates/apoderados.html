@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Apoderados')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('apoderados')}"></aside>
+
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Apoderados')}"></header>
+
+        <main class="gajog-content">
+            <div th:replace="~{fragments/ui :: pageHeader('REGISTRO DE TUTORES', 'Directorio de apoderados', 'Administra los datos de contacto de los padres o tutores responsables de alumnos menores de edad.')}"></div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header fw-bold">Registrar apoderado</div>
+                        <div class="card-body">
+                            <form th:action="@{/apoderados/guardar}" method="post">
+                                <div class="mb-2">
+                                    <label for="dniAp" class="form-label">DNI *</label>
+                                    <input id="dniAp" type="text" name="dni" class="form-control" maxlength="15" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="nomAp" class="form-label">Nombres *</label>
+                                    <input id="nomAp" type="text" name="nombres" class="form-control" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="apeAp" class="form-label">Apellidos *</label>
+                                    <input id="apeAp" type="text" name="apellidos" class="form-control" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="telAp" class="form-label">Teléfono de contacto *</label>
+                                    <input id="telAp" type="text" name="telefono" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="corAp" class="form-label">Correo electrónico</label>
+                                    <input id="corAp" type="email" name="correo" class="form-control">
+                                </div>
+                                <button type="submit" class="btn btn-gajog-primary w-100">Guardar apoderado &rarr;</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div th:replace="~{fragments/ui :: tableToolbar('Apoderados registrados', 'buscadorApoderados', '#tablaApoderados', '🔍 Buscar por nombre, DNI o teléfono...')}"></div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-hover align-middle" id="tablaApoderados">
+                                <thead>
+                                    <tr>
+                                        <th>DNI</th>
+                                        <th>Apoderado</th>
+                                        <th>Contacto</th>
+                                        <th>Alumnos vinculados</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="ap : ${apoderados}">
+                                        <td th:text="${ap.persona.dni}"></td>
+                                        <td class="fw-bold" th:text="${ap.persona.nombres + ' ' + ap.persona.apellidos}"></td>
+                                        <td>
+                                            <div th:text="${ap.persona.telefono ?: '-'}"></div>
+                                            <small class="text-muted" th:text="${ap.persona.correo ?: ''}"></small>
+                                        </td>
+                                        <td>
+                                            <span th:if="${#lists.isEmpty(hijosPorApoderado[ap.id])}" class="text-muted small">Sin alumnos</span>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <a th:each="hijo : ${hijosPorApoderado[ap.id]}"
+                                                   th:href="@{/alumnos/{id}(id=${hijo.id})}"
+                                                   class="btn btn-sm btn-gajog-ghost py-0 px-2"
+                                                   th:text="${hijo.persona.nombres}"></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(apoderados)}" class="empty-row">
+                                        <td colspan="4">
+                                            <div th:replace="~{fragments/ui :: emptyState('👪', 'No hay apoderados registrados', 'Registra a los padres o tutores desde el formulario lateral.')}"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

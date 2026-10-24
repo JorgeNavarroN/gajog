@@ -1,5 +1,7 @@
 package com.utp.gajog.controller;
 
+import com.utp.gajog.dto.AlumnoBusquedaAsistenciaDTO;
+import com.utp.gajog.dto.ConfirmacionIngresoDniDTO;
 import com.utp.gajog.model.Asistencia;
 import com.utp.gajog.model.EstadoAsistencia;
 import com.utp.gajog.model.EstadoSesionClase;
@@ -33,6 +35,27 @@ public class AsistenciaController {
             Long alumnoId,
             EstadoAsistencia estado
     ) {}
+
+    public record RegistroRapidoDniRequest(
+            String dni,
+            Long horarioId
+    ) {}
+
+    @GetMapping("/buscar-alumno")
+    public ResponseEntity<List<AlumnoBusquedaAsistenciaDTO>> buscarAlumnoPorDniONombre(
+            @RequestParam(defaultValue = "") String q
+    ) {
+        return ResponseEntity.ok(asistenciaService.buscarAlumnosPorDniONombreJson(q));
+    }
+
+    @PostMapping("/dni")
+    public ResponseEntity<ConfirmacionIngresoDniDTO> registrarPorDni(@RequestBody RegistroRapidoDniRequest request) {
+        ConfirmacionIngresoDniDTO confirmacion = asistenciaService.registrarIngresoRapidoPorDni(
+                request.dni(),
+                request.horarioId()
+        );
+        return ResponseEntity.ok(confirmacion);
+    }
 
     @PostMapping("/sesiones")
     public ResponseEntity<SesionClase> programarSesion(@RequestBody ProgramarSesionRequest request) {

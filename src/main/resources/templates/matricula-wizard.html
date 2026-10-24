@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Nueva Matrícula')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('matriculas')}"></aside>
+
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Nueva matrícula')}"></header>
+
+        <main class="gajog-content" style="max-width: 1020px;">
+            <div class="mb-4">
+                <div class="gajog-eyebrow" th:text="${'NUEVA MATRÍCULA / PASO ' + pasoActual + ' DE 3'}">NUEVA MATRÍCULA</div>
+                <h1 class="gajog-page-title"
+                    th:text="${pasoActual == 1 ? 'Registrar alumno' : (pasoActual == 2 ? 'Revisión y categoría por edad' : 'Asignar horario')}">
+                    Registrar alumno
+                </h1>
+                <p class="gajog-page-subtitle"
+                   th:text="${pasoActual == 1 ? 'Registra los datos proporcionados en la academia y continúa con la asignación automática de categoría.' : (pasoActual == 2 ? 'Verifica los datos ingresados y la categoría asignada automáticamente según la fecha de nacimiento.' : (wizardMatricula.nombreCompletoAlumno + ' · ' + wizardMatricula.categoriaAsignadaNombre))}">
+                </p>
+            </div>
+
+            <!-- Indicador de Progreso de 3 Pasos -->
+            <div class="d-flex align-items-center gap-3 mb-4 pb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="gajog-avatar"
+                          th:style="${pasoActual >= 1 ? 'background-color: var(--gajog-accent);' : 'background-color: var(--gajog-border);'}"
+                          th:text="${pasoActual > 1 ? '✓' : '1'}">1</span>
+                    <span class="fw-semibold" th:classappend="${pasoActual == 1 ? 'text-danger' : ''}">Datos</span>
+                </div>
+                <div style="flex: 0 0 60px; height: 2px; background-color: var(--gajog-border);"></div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="gajog-avatar"
+                          th:style="${pasoActual >= 2 ? 'background-color: var(--gajog-accent);' : 'background-color: var(--gajog-border);'}"
+                          th:text="${pasoActual > 2 ? '✓' : '2'}">2</span>
+                    <span class="fw-semibold" th:classappend="${pasoActual == 2 ? 'text-danger' : ''}">Revisión</span>
+                </div>
+                <div style="flex: 0 0 60px; height: 2px; background-color: var(--gajog-border);"></div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="gajog-avatar"
+                          th:style="${pasoActual == 3 ? 'background-color: var(--gajog-accent);' : 'background-color: var(--gajog-border);'}">3</span>
+                    <span class="fw-semibold" th:classappend="${pasoActual == 3 ? 'text-danger' : ''}">Horario</span>
+                </div>
+            </div>
+
+            <!-- ==================== PASO 1: DATOS DEL ALUMNO Y APODERADO ==================== -->
+            <div th:if="${pasoActual == 1}" class="card p-4">
+                <h4 class="fw-bold mb-1">Datos del alumno y apoderado</h4>
+                <p class="small text-muted mb-4">Ingresa los datos del alumno y de su contacto responsable.</p>
+
+                <form th:action="@{/matriculas/nueva/paso-1}" th:object="${wizardMatricula}" method="post">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label for="nombresAlumno" class="form-label">Nombres del alumno *</label>
+                            <input id="nombresAlumno" type="text" th:field="*{nombresAlumno}" class="form-control" placeholder="Ej. Valeria" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="apellidosAlumno" class="form-label">Apellidos del alumno *</label>
+                            <input id="apellidosAlumno" type="text" th:field="*{apellidosAlumno}" class="form-control" placeholder="Ej. Mendoza" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="dniAlumno" class="form-label">DNI del alumno (8 dígitos) *</label>
+                            <input id="dniAlumno" type="text" th:field="*{dniAlumno}" class="form-control"
+                                   pattern="\d{8}" maxlength="8" placeholder="74581236" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="fechaNacimientoWiz" class="form-label">Fecha de nacimiento *</label>
+                            <input id="fechaNacimientoWiz" type="date" th:field="*{fechaNacimiento}" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="telefonoContacto" class="form-label">Teléfono de contacto *</label>
+                            <input id="telefonoContacto" type="text" th:field="*{telefonoContacto}" class="form-control" placeholder="987 654 321" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cinturonInicialWiz" class="form-label">Cinturón inicial *</label>
+                            <select id="cinturonInicialWiz" th:field="*{cinturonInicialId}" class="form-select" required>
+                                <option th:each="c : ${cinturones}" th:value="${c.id}" th:text="${c.nombre}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr class="border-secondary my-4">
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Datos del apoderado <span id="badgeObligatorioApoderado" class="badge bg-danger ms-1">Obligatorio para menores de 18</span></h6>
+                        <div class="w-auto">
+                            <select th:field="*{apoderadoExistenteId}" id="selectApoderadoExistente" class="form-select form-select-sm">
+                                <option value="">-- Registrar nuevo apoderado abajo o elegir existente --</option>
+                                <option th:each="ap : ${apoderados}" th:value="${ap.id}"
+                                        th:text="${ap.persona.nombres + ' ' + ap.persona.apellidos + ' (DNI: ' + ap.persona.dni + ')'}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4" id="bloqueNuevoApoderado">
+                        <div class="col-md-3">
+                            <label for="dniApoderado" class="form-label">DNI del apoderado</label>
+                            <input id="dniApoderado" type="text" th:field="*{dniApoderado}" class="form-control" maxlength="8" placeholder="8 dígitos">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="nombresApoderado" class="form-label">Nombres del apoderado</label>
+                            <input id="nombresApoderado" type="text" th:field="*{nombresApoderado}" class="form-control" placeholder="Ej. Lucía">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="apellidosApoderado" class="form-label">Apellidos del apoderado</label>
+                            <input id="apellidosApoderado" type="text" th:field="*{apellidosApoderado}" class="form-control" placeholder="Ej. Mendoza">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="parentesco" class="form-label">Parentesco</label>
+                            <select id="parentesco" th:field="*{parentesco}" class="form-select">
+                                <option value="Madre">Madre</option>
+                                <option value="Padre">Padre</option>
+                                <option value="Tutor legal">Tutor legal</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="gajog-info-note mb-4">
+                        El sistema comprobará el DNI y <strong>calculará automáticamente la categoría según la fecha de nacimiento</strong>. Para alumnos mayores de edad, los datos del apoderado son opcionales.
+                    </div>
+
+                    <!-- Esquema de Navegación Inferior: 2 botones siempre abajo -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary">
+                        <a th:href="@{/matriculas}" class="btn btn-gajog-ghost px-4 py-2">&larr; ANTERIOR</a>
+                        <button type="submit" class="btn btn-gajog-primary px-4 py-2">GUARDAR Y CONTINUAR &rarr;</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ==================== PASO 2: REVISIÓN Y CATEGORÍA AUTOMÁTICA ==================== -->
+            <div th:if="${pasoActual == 2}" class="card p-4">
+                <h4 class="fw-bold mb-1">Revisión de datos y categoría asignada</h4>
+                <p class="small text-muted mb-4">La categoría fue determinada automáticamente por el sistema a partir de la fecha de nacimiento.</p>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 h-100" style="background-color: rgba(255,255,255,0.03); border: 1px solid var(--gajog-border);">
+                            <div class="gajog-eyebrow mb-2">DATOS DEL ESTUDIANTE</div>
+                            <div class="mb-2"><span class="text-muted small">Nombre completo:</span> <strong th:text="${wizardMatricula.nombreCompletoAlumno}"></strong></div>
+                            <div class="mb-2"><span class="text-muted small">DNI:</span> <strong th:text="${wizardMatricula.dniAlumno}"></strong>
+                                <span th:if="${wizardMatricula.personaAlumnoReutilizada}" class="badge bg-info text-dark ms-1">Persona existente reutilizada</span>
+                            </div>
+                            <div class="mb-2"><span class="text-muted small">Fecha de nacimiento:</span> <strong th:text="${wizardMatricula.fechaNacimiento}"></strong></div>
+                            <div class="mb-2"><span class="text-muted small">Edad exacta calculada:</span> <strong th:text="${wizardMatricula.edadCalculada + ' años'}"></strong></div>
+                            <div><span class="text-muted small">Contacto:</span> <span th:text="${wizardMatricula.telefonoContacto}"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 h-100" style="background-color: var(--gajog-accent-soft); border: 1px solid var(--gajog-accent);">
+                            <div class="gajog-eyebrow mb-2">ASIGNACIÓN AUTOMÁTICA POR EDAD (NO EDITABLE)</div>
+                            <div class="mb-2">
+                                <span class="text-muted small d-block">Categoría asignada automáticamente:</span>
+                                <span class="fs-4 fw-bold" th:text="${wizardMatricula.categoriaAsignadaNombre}">Infantil</span>
+                                <span class="status-pill status-success ms-2" th:text="${wizardMatricula.categoriaRangoTexto}"></span>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted small">Tarifa mensual vigente:</span>
+                                <strong th:text="${'S/ ' + #numbers.formatDecimal(wizardMatricula.tarifaMensualCategoria, 1, 2)}"></strong>
+                            </div>
+                            <div th:if="${wizardMatricula.menorDeEdad}">
+                                <span class="text-muted small">Apoderado verificado:</span>
+                                <strong th:text="${wizardMatricula.apoderadoExistenteId != null ? 'Apoderado registrado seleccionado' : (wizardMatricula.nombresApoderado + ' ' + wizardMatricula.apellidosApoderado + ' (' + wizardMatricula.parentesco + ')')}"></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Esquema de Navegación Inferior: 2 botones abajo -->
+                <form th:action="@{/matriculas/nueva/paso-2}" method="post">
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary">
+                        <a th:href="@{/matriculas/nueva/paso-1}" class="btn btn-gajog-ghost px-4 py-2">&larr; ANTERIOR</a>
+                        <button type="submit" class="btn btn-gajog-primary px-4 py-2">CONTINUAR A HORARIOS &rarr;</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ==================== PASO 3: ASIGNAR HORARIO Y CONFIRMAR MATRÍCULA ==================== -->
+            <div th:if="${pasoActual == 3}">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card p-4">
+                            <h4 class="fw-bold mb-1">Horarios disponibles</h4>
+                            <p class="small text-muted mb-3">Filtra por categoría, día o turno y selecciona un grupo con cupos disponibles.</p>
+
+                            <!-- Filtros del Paso 3 (Categoría y/o Día/Turno) -->
+                            <form th:action="@{/matriculas/nueva/paso-3}" method="get" class="row g-2 mb-4 pb-3 border-bottom border-secondary">
+                                <div class="col-sm-4">
+                                    <label for="fCatP3" class="form-label small mb-1">Categoría</label>
+                                    <select id="fCatP3" name="filtroCategoriaId" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option th:each="c : ${categorias}" th:value="${c.id}"
+                                                th:text="${c.nombre + (c.id == wizardMatricula.categoriaAsignadaId ? ' (Asignada por edad)' : '')}"
+                                                th:selected="${c.id == wizardMatricula.filtroCategoriaPaso3Id}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label for="fDiaP3" class="form-label small mb-1">Día de semana</label>
+                                    <select id="fDiaP3" name="filtroDia" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="">Todos los días</option>
+                                        <option th:each="d : ${diasSemana}" th:value="${d}"
+                                                th:text="${d}" th:selected="${d == wizardMatricula.filtroDiaPaso3}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label for="fTurnoP3" class="form-label small mb-1">Turno / Hora</label>
+                                    <select id="fTurnoP3" name="filtroTurno" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="">Todos los turnos</option>
+                                        <option value="MANIANA" th:selected="${wizardMatricula.filtroTurnoPaso3 == 'MANIANA'}">Mañana (antes de 12:00)</option>
+                                        <option value="TARDE" th:selected="${wizardMatricula.filtroTurnoPaso3 == 'TARDE'}">Tarde (12:00 a 18:00)</option>
+                                        <option value="NOCHE" th:selected="${wizardMatricula.filtroTurnoPaso3 == 'NOCHE'}">Noche (después de 18:00)</option>
+                                    </select>
+                                </div>
+                            </form>
+
+                            <form th:action="@{/matriculas/nueva/confirmar}" th:object="${wizardMatricula}" method="post">
+                                <div th:if="${#lists.isEmpty(horariosDisponibles)}" class="py-4 text-center text-muted">
+                                    No hay horarios que coincidan con el filtro seleccionado.
+                                </div>
+
+                                <div class="d-flex flex-column gap-3 mb-4">
+                                    <label th:each="h : ${horariosDisponibles}"
+                                           class="p-3 rounded-3 d-flex justify-content-between align-items-center"
+                                           th:style="${h.tieneCupo() && h.categoriaId == wizardMatricula.categoriaAsignadaId ? 'border: 1px solid var(--gajog-accent); background-color: rgba(220,38,38,0.06); cursor: pointer;' : 'border: 1px solid var(--gajog-border); opacity: 0.65;'}">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <input type="radio" class="form-check-input mt-0"
+                                                   th:field="*{horarioSeleccionadoId}" th:value="${h.id}"
+                                                   th:disabled="${!h.tieneCupo() || h.categoriaId != wizardMatricula.categoriaAsignadaId}" required>
+                                            <div>
+                                                <div class="fw-bold" th:text="${h.diaSemana + ' · ' + h.horaInicio + ' – ' + h.horaFin}">Lunes y miércoles</div>
+                                                <small class="text-muted" th:text="${h.sala + ' ·Categoría: ' + h.categoriaNombre + ' · ' + h.instructorNombre}"></small>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="fw-bold"
+                                                  th:classappend="${h.tieneCupo() ? 'text-info' : 'text-danger'}"
+                                                  th:text="${h.cuposDisponibles + ' cupos'}">8 cupos</span>
+                                            <div class="small text-muted" th:text="${'Capacidad: ' + h.cupoMaximo}"></div>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- CORRECCIÓN OBLIGATORIA DEL PROFESOR: En la parte inferior aparecen 2 botones: ANTERIOR y CONFIRMAR MATRÍCULA -->
+                                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary">
+                                    <a th:href="@{/matriculas/nueva/paso-2}" class="btn btn-gajog-ghost px-4 py-2">&larr; ANTERIOR</a>
+                                    <button type="submit" class="btn btn-gajog-primary px-4 py-2">CONFIRMAR MATRÍCULA &rarr;</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta Derecha: Resumen de Matrícula estilo maqueta -->
+                    <div class="col-lg-4">
+                        <div class="card p-4">
+                            <h5 class="fw-bold pb-3 mb-3 border-bottom border-secondary">Resumen de matrícula</h5>
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <div class="small text-muted">Alumno</div>
+                                    <div class="fw-bold" th:text="${wizardMatricula.nombreCompletoAlumno}">Valeria Mendoza</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">DNI</div>
+                                    <div class="fw-bold" th:text="${wizardMatricula.dniAlumno}">74581236</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Categoría (auto)</div>
+                                    <div class="fw-bold" th:text="${wizardMatricula.categoriaAsignadaNombre}">Infantil</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Edad</div>
+                                    <div class="fw-bold" th:text="${wizardMatricula.edadCalculada + ' años'}">9 años</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="small text-muted">Primera mensualidad a generar</div>
+                                    <div class="fw-bold text-danger" th:text="${'S/ ' + #numbers.formatDecimal(wizardMatricula.tarifaMensualCategoria, 1, 2)}">S/ 100.00</div>
+                                </div>
+                            </div>
+
+                            <div class="gajog-info-note">
+                                Al confirmar, el alumno quedará matriculado en el horario seleccionado y se generará su primera cuota mensual en una sola operación.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

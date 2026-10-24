@@ -1,105 +1,172 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Matrículas')}"></head>
-<body class="bg-light">
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('matriculas')}"></aside>
 
-<nav th:replace="~{fragments/layout :: navbar('matriculas')}"></nav>
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Matrículas')}"></header>
 
-<div class="container">
-    <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
-    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <main class="gajog-content">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div th:replace="~{fragments/ui :: pageHeader('ADMINISTRACIÓN', 'Matrículas', 'Completa los registros en proceso, filtra por categoría u horario y consulta los alumnos matriculados.')}"></div>
+                <a th:href="@{/matriculas/nueva(reiniciar=true)}" class="btn btn-gajog-primary px-4 py-2">
+                    + Nueva matrícula
+                </a>
+            </div>
 
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white fw-bold">Nueva Matrícula</div>
-                <div class="card-body">
-                    <form th:action="@{/matriculas/guardar}" method="post">
-                        <div class="mb-3">
-                            <label class="form-label">Alumno Activo</label>
-                            <select name="alumnoId" class="form-select" required>
-                                <option value="">-- Seleccione Alumno --</option>
-                                <option th:each="a : ${alumnos}"
-                                        th:value="${a.id}"
-                                        th:text="${a.persona.dni + ' - ' + a.persona.nombres + ' ' + a.persona.apellidos}"></option>
+            <!-- Aviso si hay alumnos cuya edad ya no corresponde a su categoría -->
+            <div th:if="${!#lists.isEmpty(desfasesEdad)}" class="gajog-info-note mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <strong>⚠️ Cambio de categoría por edad detectado:</strong>
+                    Hay <span th:text="${#lists.size(desfasesEdad)}"></span> alumno(s) cuya edad actual ya no coincide con el rango de su categoría.
+                </div>
+                <a th:href="@{/alumnos/{id}(id=${desfasesEdad[0].alumnoId})}" class="btn btn-sm btn-warning text-dark fw-bold">
+                    Revisar y reasignar grupo &rarr;
+                </a>
+            </div>
+
+            <!-- Pestañas por Estado (Todas / En proceso / Activas / Finalizadas / Canceladas) -->
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a th:href="@{/matriculas(tab='TODAS', q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                   class="btn btn-sm" th:classappend="${filtro.tabActiva() == 'TODAS' ? 'btn-gajog-primary' : 'btn-gajog-ghost'}">
+                    Todas (<span th:text="${conteosPestania['TODAS']}">0</span>)
+                </a>
+                <a th:href="@{/matriculas(tab='PENDIENTES', q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                   class="btn btn-sm" th:classappend="${filtro.tabActiva() == 'PENDIENTES' ? 'btn-gajog-primary' : 'btn-gajog-ghost'}">
+                    En proceso (<span th:text="${conteosPestania['PENDIENTES']}">0</span>)
+                </a>
+                <a th:href="@{/matriculas(tab='ACTIVAS', q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                   class="btn btn-sm" th:classappend="${filtro.tabActiva() == 'ACTIVAS' ? 'btn-gajog-primary' : 'btn-gajog-ghost'}">
+                    Matriculadas / Activas (<span th:text="${conteosPestania['ACTIVAS']}">0</span>)
+                </a>
+                <a th:href="@{/matriculas(tab='FINALIZADAS', q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                   class="btn btn-sm" th:classappend="${filtro.tabActiva() == 'FINALIZADAS' ? 'btn-gajog-primary' : 'btn-gajog-ghost'}">
+                    Finalizadas (<span th:text="${conteosPestania['FINALIZADAS']}">0</span>)
+                </a>
+                <a th:href="@{/matriculas(tab='CANCELADAS', q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                   class="btn btn-sm" th:classappend="${filtro.tabActiva() == 'CANCELADAS' ? 'btn-gajog-primary' : 'btn-gajog-ghost'}">
+                    Canceladas (<span th:text="${conteosPestania['CANCELADAS']}">0</span>)
+                </a>
+            </div>
+
+            <!-- Corrección del profesor: Filtros de Categoría y/o Horario + Buscador -->
+            <div class="card mb-4">
+                <div class="card-body py-3">
+                    <form th:action="@{/matriculas}" method="get" class="row g-2 align-items-end">
+                        <input type="hidden" name="tab" th:value="${filtro.tabActiva()}">
+
+                        <div class="col-12 col-md-4">
+                            <label for="qMat" class="form-label small mb-1">Buscar alumno o DNI</label>
+                            <input id="qMat" type="search" name="q" class="form-control form-control-sm"
+                                   placeholder="🔍 Nombre, apellido o DNI..." th:value="${filtro.q}">
+                        </div>
+
+                        <div class="col-6 col-md-3">
+                            <label for="catMat" class="form-label small mb-1">Filtrar por categoría</label>
+                            <select id="catMat" name="categoriaId" class="form-select form-select-sm">
+                                <option value="">Todas las categorías</option>
+                                <option th:each="c : ${categorias}" th:value="${c.id}"
+                                        th:text="${c.nombre + ' (' + c.edadMinima + '-' + c.edadMaxima + ' años)'}"
+                                        th:selected="${c.id == filtro.categoriaId}"></option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Categoría (Rango de Edad)</label>
-                            <select name="categoriaId" id="selectCategoria" class="form-select" required>
-                                <option value="">-- Seleccione Categoría --</option>
-                                <option th:each="cat : ${categorias}"
-                                        th:value="${cat.id}"
-                                        th:text="${cat.nombre + ' (' + cat.edadMinima + ' a ' + cat.edadMaxima + ' años)'}"></option>
+
+                        <div class="col-6 col-md-3">
+                            <label for="horMat" class="form-label small mb-1">Filtrar por horario</label>
+                            <select id="horMat" name="horarioId" class="form-select form-select-sm">
+                                <option value="">Todos los horarios</option>
+                                <option th:each="h : ${horarios}" th:value="${h.id}"
+                                        th:text="${h.categoria.nombre + ' · ' + h.diaSemana + ' (' + h.horaInicio + ')'}"
+                                        th:selected="${h.id == filtro.horarioId}"></option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Horario Disponible</label>
-                            <select name="horarioId" id="selectHorario" class="form-select" required>
-                                <option value="">-- Primero elija una categoría --</option>
-                                <option th:each="h : ${horarios}"
-                                        th:value="${h.id}"
-                                        th:attr="data-categoria=${h.categoria.id}"
-                                        th:text="${h.diaSemana + ' (' + h.horaInicio + ' a ' + h.horaFin + ')'}"></option>
-                            </select>
+
+                        <div class="col-12 col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-gajog-primary w-100">Filtrar</button>
+                            <a th:href="@{/matriculas(tab=${filtro.tabActiva()})}" class="btn btn-sm btn-gajog-ghost">Limpiar</a>
                         </div>
-                        <button type="submit" class="btn btn-success w-100">Registrar Matrícula</button>
                     </form>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold">Matrículas Vigentes</div>
-                <div class="card-body table-responsive">
+            <!-- Tabla de Matrículas estilo maqueta -->
+            <div class="card">
+                <div class="card-body p-0 table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th>Alumno</th>
+                                <th>DNI</th>
+                                <th>Apoderado</th>
                                 <th>Categoría</th>
-                                <th>Día y Hora</th>
-                                <th>Fecha Matrícula</th>
+                                <th>Horario / Sala</th>
                                 <th>Estado</th>
+                                <th class="text-end">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="m : ${matriculas}">
-                                <td class="fw-semibold" th:text="${m.alumno.persona.nombres + ' ' + m.alumno.persona.apellidos}"></td>
+                            <tr th:each="m : ${pageMatriculas.content}">
+                                <td>
+                                    <div class="fw-bold" th:text="${m.alumno.persona.nombres + ' ' + m.alumno.persona.apellidos}"></div>
+                                    <small class="text-muted" th:text="${m.estado.name() == 'ACTIVA' ? 'Matrícula confirmada' : 'Fecha: ' + m.fechaMatricula}"></small>
+                                </td>
+                                <td th:text="${m.alumno.persona.dni}"></td>
+                                <td th:text="${m.alumno.apoderado != null ? (m.alumno.apoderado.persona.nombres + ' ' + m.alumno.apoderado.persona.apellidos) : 'Mayor de edad'}"></td>
                                 <td th:text="${m.categoria.nombre}"></td>
-                                <td th:text="${m.horario.diaSemana + ' ' + m.horario.horaInicio + ' - ' + m.horario.horaFin}"></td>
-                                <td th:text="${m.fechaMatricula}"></td>
-                                <td><span class="badge bg-primary" th:text="${m.estado}"></span></td>
+                                <td>
+                                    <div th:text="${m.horario.diaSemana + ' (' + m.horario.horaInicio + ' - ' + m.horario.horaFin + ')'}"></div>
+                                    <small class="text-muted" th:text="${m.horario.sala}"></small>
+                                </td>
+                                <td>
+                                    <span th:replace="~{fragments/ui :: statusBadge(${m.estado.name() == 'ACTIVA' ? 'Matriculado' : (m.estado.name() == 'PENDIENTE' ? 'En proceso' : m.estado)}, ${m.estado.name() == 'ACTIVA' ? 'success' : (m.estado.name() == 'PENDIENTE' ? 'warning' : 'danger')})}"></span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a th:if="${m.estado.name() == 'PENDIENTE'}"
+                                           th:href="@{/matriculas/nueva(matriculaId=${m.id})}"
+                                           class="btn btn-sm btn-gajog-primary">Completar &rarr;</a>
+
+                                        <a th:if="${m.estado.name() != 'PENDIENTE'}"
+                                           th:href="@{/alumnos/{id}(id=${m.alumno.id})}"
+                                           class="btn btn-sm btn-gajog-ghost">Ver ficha &rarr;</a>
+
+                                        <form th:if="${m.estado.name() == 'ACTIVA'}"
+                                              th:action="@{/matriculas/{id}/estado(id=${m.id})}" method="post"
+                                              data-confirm="¿Deseas cancelar esta matrícula activa?">
+                                            <input type="hidden" name="nuevoEstado" value="CANCELADA">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
-                            <tr th:if="${#lists.isEmpty(matriculas)}">
-                                <td colspan="5" class="text-center text-muted">No hay matrículas registradas.</td>
+                            <tr th:if="${pageMatriculas.empty}" class="empty-row">
+                                <td colspan="7">
+                                    <div th:replace="~{fragments/ui :: emptyState('🪪', 'Sin matrículas en esta vista', 'Pulsa + Nueva matrícula para iniciar el registro guiado en 3 pasos.')}"></div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Paginación -->
+                <div class="card-footer bg-transparent border-top border-secondary d-flex justify-content-between align-items-center py-2 px-3"
+                     th:if="${pageMatriculas.totalPages > 1}">
+                    <small class="text-muted" th:text="${'Página ' + (pageMatriculas.number + 1) + ' de ' + pageMatriculas.totalPages}"></small>
+                    <div class="d-flex gap-1">
+                        <a th:if="${pageMatriculas.hasPrevious()}"
+                           th:href="@{/matriculas(tab=${filtro.tabActiva()}, page=${pageMatriculas.number - 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                           class="btn btn-sm btn-gajog-ghost">Anterior</a>
+                        <a th:if="${pageMatriculas.hasNext()}"
+                           th:href="@{/matriculas(tab=${filtro.tabActiva()}, page=${pageMatriculas.number + 1}, q=${filtro.q}, categoriaId=${filtro.categoriaId}, horarioId=${filtro.horarioId})}"
+                           class="btn btn-sm btn-gajog-ghost">Siguiente</a>
+                    </div>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 </div>
-
 <div th:replace="~{fragments/layout :: scripts}"></div>
-<script>
-    const selectCategoria = document.getElementById('selectCategoria');
-    const selectHorario = document.getElementById('selectHorario');
-    const opcionesHorario = Array.from(selectHorario.querySelectorAll('option[data-categoria]'));
-
-    function filtrarHorarios() {
-        const catId = selectCategoria.value;
-        selectHorario.innerHTML = '<option value="">-- Seleccione Horario --</option>';
-        opcionesHorario.forEach(op => {
-            if (op.getAttribute('data-categoria') === catId) {
-                selectHorario.appendChild(op);
-            }
-        });
-    }
-
-    selectCategoria.addEventListener('change', filtrarHorarios);
-    filtrarHorarios();
-</script>
 </body>
 </html>

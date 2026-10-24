@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Horarios')}"></head>
+<body>
+<div class="gajog-shell">
+    <aside th:replace="~{fragments/layout :: sidebar('horarios')}"></aside>
+
+    <div class="gajog-main">
+        <header th:replace="~{fragments/layout :: topbar('Horarios')}"></header>
+
+        <main class="gajog-content">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div th:replace="~{fragments/ui :: pageHeader('GESTIÓN DE GRUPOS', 'Horarios y cupos', 'Filtra los turnos por categoría o día y verifica los cupos disponibles en tiempo real.')}"></div>
+                <a th:href="@{/matriculas/nueva(reiniciar=true)}" class="btn btn-gajog-primary">+ Nueva matrícula</a>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body py-3">
+                    <form th:action="@{/horarios}" method="get" class="row g-2 align-items-end">
+                        <div class="col-sm-5">
+                            <label for="catHor" class="form-label small mb-1">Categoría</label>
+                            <select id="catHor" name="categoriaId" class="form-select form-select-sm">
+                                <option value="">Todas las categorías</option>
+                                <option th:each="c : ${categorias}" th:value="${c.id}"
+                                        th:text="${c.nombre}" th:selected="${c.id == categoriaIdSeleccionada}"></option>
+                            </select>
+                        </div>
+                        <div class="col-sm-5">
+                            <label for="diaHor" class="form-label small mb-1">Día de entrenamiento</label>
+                            <select id="diaHor" name="diaSemana" class="form-select form-select-sm">
+                                <option value="">Todos los días</option>
+                                <option th:each="d : ${diasSemana}" th:value="${d}"
+                                        th:text="${d}" th:selected="${d == diaSeleccionado}"></option>
+                            </select>
+                        </div>
+                        <div class="col-sm-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-gajog-primary w-100">Filtrar</button>
+                            <a th:href="@{/horarios}" class="btn btn-sm btn-gajog-ghost">Limpiar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Categoría</th>
+                                <th>Día</th>
+                                <th>Horario</th>
+                                <th>Sala</th>
+                                <th>Instructor</th>
+                                <th>Ocupación</th>
+                                <th>Cupos disponibles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="h : ${horariosDisponibles}">
+                                <td class="fw-bold" th:text="${h.categoriaNombre}"></td>
+                                <td th:text="${h.diaSemana}"></td>
+                                <td th:text="${h.horaInicio + ' - ' + h.horaFin}"></td>
+                                <td th:text="${h.sala}"></td>
+                                <td th:text="${h.instructorNombre}"></td>
+                                <td th:text="${h.inscritosActivos + ' / ' + h.cupoMaximo}"></td>
+                                <td>
+                                    <span th:replace="~{fragments/ui :: statusBadge(${h.cuposDisponibles + ' libres'}, ${h.tieneCupo() ? 'success' : 'danger'})}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

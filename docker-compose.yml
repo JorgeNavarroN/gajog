@@ -1,0 +1,46 @@
+services:
+  mysql-db:
+    image: mysql:8.4
+    container_name: gajog-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: taekwondo_db
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-GajogProd2026!}
+      TZ: America/Lima
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=-05:00
+    ports:
+      - "3307:3306"
+    volumes:
+      - gajog_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-GajogProd2026!}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  gajog-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gajog-tkd-app
+    restart: unless-stopped
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://mysql-db:3306/taekwondo_db?createDatabaseIfNotExist=true&serverTimezone=America/Lima&characterEncoding=UTF-8
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-GajogProd2026!}
+      GAJOG_DIAS_AVISO: 5
+      GAJOG_DIAS_GRACIA: 15
+      GAJOG_BAJA_AUTO_MORA: "false"
+      GAJOG_TOLERANCIA_TARDANZA: 10
+    ports:
+      - "8080:8080"
+
+volumes:
+  gajog_mysql_data:
