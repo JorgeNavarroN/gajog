@@ -31,6 +31,7 @@ class MatriculaServiceTest {
     @Mock private ApoderadoRepository apoderadoRepository;
     @Mock private CategoriaRepository categoriaRepository;
     @Mock private HorarioRepository horarioRepository;
+    @Mock private GrupoRepository grupoRepository;
     @Mock private CinturonRepository cinturonRepository;
     @Mock private HistorialCinturonesRepository historialCinturonesRepository;
     @Mock private TarifaRepository tarifaRepository;
@@ -55,6 +56,7 @@ class MatriculaServiceTest {
                 apoderadoRepository,
                 categoriaRepository,
                 horarioRepository,
+                grupoRepository,
                 cinturonRepository,
                 historialCinturonesRepository,
                 tarifaRepository,
@@ -122,14 +124,21 @@ class MatriculaServiceTest {
         wizard.setDniApoderado("41256398");
         wizard.setNombresApoderado("Lucía");
         wizard.setApellidosApoderado("Mendoza");
-        wizard.setHorarioSeleccionadoId(50L);
+        wizard.setGrupoSeleccionadoId(50L);
 
         when(alumnoRepository.findByPersonaDni("74581236")).thenReturn(Optional.empty());
         when(personaRepository.existsByDni("74581236")).thenReturn(false);
         when(categoriaRepository.findActivaPorEdad(9)).thenReturn(Optional.of(infantil));
         when(tarifaRepository.findFirstByCategoriaIdAndActivoTrueOrderByFechaDesdeDesc(1L)).thenReturn(Optional.empty());
-        when(horarioRepository.findByIdConBloqueoOptimista(50L)).thenReturn(Optional.of(horarioSinCupo));
-        when(matriculaRepository.countByHorarioIdAndEstado(50L, EstadoMatricula.ACTIVA)).thenReturn(15L);
+        Grupo grupo = new Grupo();
+        grupo.setId(50L);
+        grupo.setCategoria(infantil);
+        grupo.setNombre("Infantil A");
+        grupo.setCupoMaximo(15);
+        grupo.getHorarios().add(horarioSinCupo);
+        horarioSinCupo.setGrupo(grupo);
+        when(grupoRepository.findByIdParaMatricula(50L)).thenReturn(Optional.of(grupo));
+        when(matriculaRepository.countByGrupoIdAndEstado(50L, EstadoMatricula.ACTIVA)).thenReturn(15L);
 
         ReglaNegocioException ex = assertThrows(ReglaNegocioException.class, () ->
                 matriculaService.confirmarMatriculaWizard(wizard)

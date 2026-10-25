@@ -101,7 +101,7 @@
                                 <th>DNI</th>
                                 <th>Apoderado</th>
                                 <th>Categoría</th>
-                                <th>Horario / Sala</th>
+                                <th>Grupo / Horarios</th>
                                 <th>Estado</th>
                                 <th class="text-end">Acción</th>
                             </tr>
@@ -114,10 +114,10 @@
                                 </td>
                                 <td th:text="${m.alumno.persona.dni}"></td>
                                 <td th:text="${m.alumno.apoderado != null ? (m.alumno.apoderado.persona.nombres + ' ' + m.alumno.apoderado.persona.apellidos) : 'Mayor de edad'}"></td>
-                                <td th:text="${m.categoria.nombre}"></td>
+                                <td th:text="${m.grupo.categoria.nombre}"></td>
                                 <td>
-                                    <div th:text="${m.horario.diaSemana + ' (' + m.horario.horaInicio + ' - ' + m.horario.horaFin + ')'}"></div>
-                                    <small class="text-muted" th:text="${m.horario.sala}"></small>
+                                    <div th:text="${m.grupo.nombre}"></div>
+                                    <small class="text-muted" th:text="${m.grupo.horarios.size() + ' horarios del grupo'}"></small>
                                 </td>
                                 <td>
                                     <span th:replace="~{fragments/ui :: statusBadge(${m.estado.name() == 'ACTIVA' ? 'Matriculado' : (m.estado.name() == 'PENDIENTE' ? 'En proceso' : m.estado)}, ${m.estado.name() == 'ACTIVA' ? 'success' : (m.estado.name() == 'PENDIENTE' ? 'warning' : 'danger')})}"></span>

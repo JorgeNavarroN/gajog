@@ -86,11 +86,19 @@ class AsistenciaServiceTest {
         horarioMiercoles16h.setSala("Sala A");
         horarioMiercoles16h.setInstructor(instructor);
 
+        Grupo grupo = new Grupo();
+        grupo.setId(44L);
+        grupo.setCategoria(categoriaInfantil);
+        grupo.setNombre("Infantil A");
+        grupo.setInstructor(instructor);
+        grupo.getHorarios().add(horarioMiercoles16h);
+        horarioMiercoles16h.setGrupo(grupo);
+
         matriculaActiva = new Matricula();
         matriculaActiva.setId(20L);
         matriculaActiva.setAlumno(alumnoMatriculado);
         matriculaActiva.setCategoria(categoriaInfantil);
-        matriculaActiva.setHorario(horarioMiercoles16h);
+        matriculaActiva.setGrupo(grupo);
         matriculaActiva.setEstado(EstadoMatricula.ACTIVA);
     }
 

@@ -304,7 +304,10 @@ public class AlumnoService {
             Categoria c = m.getCategoria();
             Horario h = m.getHorario();
             catNombre = c.getNombre();
-            horTexto = h.getDiaSemana() + " " + h.getHoraInicio() + " (" + h.getSala() + ")";
+            horTexto = m.getGrupo().getHorarios().stream()
+                    .map(turno -> turno.getDiaSemana() + " " + turno.getHoraInicio()
+                            + " (" + turno.getSala() + ")")
+                    .collect(java.util.stream.Collectors.joining(" · "));
             horId = h.getId();
             if (fn != null) {
                 desfaseEdad = (edad < c.getEdadMinima() || edad > c.getEdadMaxima());

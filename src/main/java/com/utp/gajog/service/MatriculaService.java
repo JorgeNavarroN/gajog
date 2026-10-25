@@ -33,6 +33,7 @@ public class MatriculaService {
     private final ApoderadoRepository apoderadoRepository;
     private final CategoriaRepository categoriaRepository;
     private final HorarioRepository horarioRepository;
+    private final GrupoRepository grupoRepository;
     private final CinturonRepository cinturonRepository;
     private final HistorialCinturonesRepository historialCinturonesRepository;
     private final TarifaRepository tarifaRepository;
@@ -46,6 +47,7 @@ public class MatriculaService {
             ApoderadoRepository apoderadoRepository,
             CategoriaRepository categoriaRepository,
             HorarioRepository horarioRepository,
+            GrupoRepository grupoRepository,
             CinturonRepository cinturonRepository,
             HistorialCinturonesRepository historialCinturonesRepository,
             TarifaRepository tarifaRepository,
@@ -58,6 +60,7 @@ public class MatriculaService {
         this.apoderadoRepository = apoderadoRepository;
         this.categoriaRepository = categoriaRepository;
         this.horarioRepository = horarioRepository;
+        this.grupoRepository = grupoRepository;
         this.cinturonRepository = cinturonRepository;
         this.historialCinturonesRepository = historialCinturonesRepository;
         this.tarifaRepository = tarifaRepository;
@@ -199,45 +202,46 @@ public class MatriculaService {
      * Paso 3: Lista horarios disponibles con filtros por categoría, día de semana y rango/turno horario.
      */
     @Transactional(readOnly = true)
-    public List<HorarioDisponibleDTO> buscarHorariosParaPaso3(
-            Long categoriaId,
-            DiaSemana diaSemana,
-            String turno
-    ) {
-        List<Horario> horarios = horarioRepository.buscarHorariosConDetalle(categoriaId, diaSemana);
-        List<HorarioDisponibleDTO> resultado = new ArrayList<>();
-
-        for (Horario h : horarios) {
+    public List<HorarioDisponibleDTO> buscarHorariosParaPaso3(Long categoriaId, DiaSemana diaSemana, String turno) {
+        List<Horario> filtrados = horarioRepository.buscarHorariosConDetalle(categoriaId, diaSemana);
+        Map<Long, Grupo> grupos = new LinkedHashMap<>();
+        for (Horario horario : filtrados) {
+            if (!Boolean.TRUE.equals(horario.getActivo()) || !Boolean.TRUE.equals(horario.getGrupo().getActivo())) continue;
             if (turno != null && !turno.isBlank()) {
-                boolean esManiana = h.getHoraInicio().isBefore(LocalTime.of(12, 0));
-                boolean esTarde = !esManiana && h.getHoraInicio().isBefore(LocalTime.of(18, 0));
-                boolean esNoche = !esManiana && !esTarde;
-
-                if ("MANIANA".equalsIgnoreCase(turno) && !esManiana) continue;
-                if ("TARDE".equalsIgnoreCase(turno) && !esTarde) continue;
-                if ("NOCHE".equalsIgnoreCase(turno) && !esNoche) continue;
+                LocalTime hora = horario.getHoraInicio();
+                boolean maniana = hora.isBefore(LocalTime.NOON);
+                boolean tarde = !maniana && hora.isBefore(LocalTime.of(18, 0));
+                if ("MANIANA".equalsIgnoreCase(turno) && !maniana) continue;
+                if ("TARDE".equalsIgnoreCase(turno) && !tarde) continue;
+                if ("NOCHE".equalsIgnoreCase(turno) && (maniana || tarde)) continue;
             }
+            grupos.putIfAbsent(horario.getGrupo().getId(), horario.getGrupo());
+        }
 
-            long inscritos = matriculaRepository.countByHorarioIdAndEstado(h.getId(), EstadoMatricula.ACTIVA);
-            int cupoMax = h.getCupoMaximo() != null ? h.getCupoMaximo() : 20;
-            int disponibles = Math.max(0, cupoMax - (int) inscritos);
-
-            String nombreInstructor = (h.getInstructor() != null && h.getInstructor().getPersona() != null)
-                    ? h.getInstructor().getPersona().getNombres() + " " + h.getInstructor().getPersona().getApellidos()
-                    : "Sabonim por asignar";
-
+        List<HorarioDisponibleDTO> resultado = new ArrayList<>();
+        for (Grupo grupo : grupos.values()) {
+            List<Horario> horarios = grupo.getHorarios().stream()
+                    .filter(h -> Boolean.TRUE.equals(h.getActivo()))
+                    .sorted(Comparator.comparing(Horario::getDiaSemana).thenComparing(Horario::getHoraInicio))
+                    .toList();
+            if (horarios.isEmpty()) continue;
+            Horario primero = horarios.getFirst();
+            long inscritos = matriculaRepository.countByGrupoIdAndEstado(grupo.getId(), EstadoMatricula.ACTIVA);
+            int capacidad = grupo.getCupoMaximo();
+            int disponibles = Math.max(0, capacidad - (int) inscritos);
+            Instructor instructor = grupo.getInstructor();
+            String nombreInstructor = instructor != null && instructor.getPersona() != null
+                    ? instructor.getPersona().getNombres() + " " + instructor.getPersona().getApellidos()
+                    : "Instructor por asignar";
+            String resumenHorarios = horarios.stream()
+                    .map(h -> h.getDiaSemana() + " " + h.getHoraInicio() + " - " + h.getHoraFin()
+                            + " (" + h.getSala() + ")")
+                    .collect(java.util.stream.Collectors.joining(" · "));
             resultado.add(new HorarioDisponibleDTO(
-                    h.getId(),
-                    h.getCategoria().getId(),
-                    h.getCategoria().getNombre(),
-                    h.getDiaSemana(),
-                    h.getHoraInicio(),
-                    h.getHoraFin(),
-                    h.getSala(),
-                    nombreInstructor,
-                    cupoMax,
-                    inscritos,
-                    disponibles
+                    grupo.getId(), grupo.getCategoria().getId(), grupo.getCategoria().getNombre(),
+                    primero.getDiaSemana(), primero.getHoraInicio(), primero.getHoraFin(),
+                    primero.getSala(), nombreInstructor, capacidad, inscritos, disponibles,
+                    grupo.getNombre(), resumenHorarios
             ));
         }
         return resultado;
@@ -251,26 +255,29 @@ public class MatriculaService {
     public Matricula confirmarMatriculaWizard(MatriculaWizardDTO wizard) {
         validarPaso1YCalcularRevision(wizard);
 
-        if (wizard.getHorarioSeleccionadoId() == null) {
-            throw new ReglaNegocioException("Debe seleccionar un horario disponible para confirmar la matrícula.");
+        if (wizard.getGrupoSeleccionadoId() == null) {
+            throw new ReglaNegocioException("Debe seleccionar un grupo disponible para confirmar la matrícula.");
         }
 
         try {
-            Horario horario = horarioRepository.findByIdConBloqueoOptimista(wizard.getHorarioSeleccionadoId())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("El horario seleccionado no existe"));
+            Grupo grupo = grupoRepository.findByIdParaMatricula(wizard.getGrupoSeleccionadoId())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("El grupo seleccionado no existe"));
+            if (!Boolean.TRUE.equals(grupo.getActivo()) || grupo.getHorarios().stream().noneMatch(h -> Boolean.TRUE.equals(h.getActivo()))) {
+                throw new ReglaNegocioException("El grupo seleccionado no tiene horarios activos.");
+            }
 
-            if (!horario.getCategoria().getId().equals(wizard.getCategoriaAsignadaId())) {
+            if (!grupo.getCategoria().getId().equals(wizard.getCategoriaAsignadaId())) {
                 throw new ReglaNegocioException(
-                        "El horario seleccionado (" + horario.getCategoria().getNombre()
+                        "El grupo seleccionado (" + grupo.getCategoria().getNombre()
                         + ") no corresponde a la categoría asignada por edad (" + wizard.getCategoriaAsignadaNombre() + ")."
                 );
             }
 
-            long inscritosActivos = matriculaRepository.countByHorarioIdAndEstado(horario.getId(), EstadoMatricula.ACTIVA);
-            if (horario.getCupoMaximo() != null && inscritosActivos >= horario.getCupoMaximo()) {
+            long inscritosActivos = matriculaRepository.countByGrupoIdAndEstado(grupo.getId(), EstadoMatricula.ACTIVA);
+            if (inscritosActivos >= grupo.getCupoMaximo()) {
                 throw new ReglaNegocioException(
-                        "El horario seleccionado ya no cuenta con cupos disponibles ("
-                        + inscritosActivos + "/" + horario.getCupoMaximo() + ")."
+                        "El grupo seleccionado ya no cuenta con cupos disponibles ("
+                        + inscritosActivos + "/" + grupo.getCupoMaximo() + ")."
                 );
             }
 
@@ -343,7 +350,7 @@ public class MatriculaService {
             }
 
             // 4. Crear o activar Matrícula
-            Categoria categoriaAsignada = horario.getCategoria();
+            Categoria categoriaAsignada = grupo.getCategoria();
             Matricula matricula;
             if (wizard.getMatriculaPendienteId() != null) {
                 matricula = matriculaRepository.findById(wizard.getMatriculaPendienteId())
@@ -353,8 +360,7 @@ public class MatriculaService {
             }
 
             matricula.setAlumno(alumno);
-            matricula.setCategoria(categoriaAsignada);
-            matricula.setHorario(horario);
+            matricula.setGrupo(grupo);
             matricula.setFechaMatricula(hoy);
             matricula.setEstado(EstadoMatricula.ACTIVA);
 
@@ -363,13 +369,13 @@ public class MatriculaService {
             // 5. Generar automáticamente la primera mensualidad
             pagoService.generarPrimeraMensualidadPorMatricula(matriculaGuardada);
 
-            log.info("Matrícula confirmada exitosamente (ID {}) para alumno {} en categoría {} / horario {}.",
-                    matriculaGuardada.getId(), personaAlumno.getDni(), categoriaAsignada.getNombre(), horario.getId());
+            log.info("Matrícula confirmada exitosamente (ID {}) para alumno {} en categoría {} / grupo {}.",
+                    matriculaGuardada.getId(), personaAlumno.getDni(), categoriaAsignada.getNombre(), grupo.getId());
             return matriculaGuardada;
 
         } catch (OptimisticLockException | OptimisticLockingFailureException ex) {
             throw new ReglaNegocioException(
-                    "Otro usuario ocupó simultáneamente el último cupo de este horario. Por favor, elija otro horario."
+                    "Otro usuario ocupó simultáneamente el último cupo de este grupo. Por favor, elija otro grupo."
             );
         }
     }
@@ -408,41 +414,33 @@ public class MatriculaService {
     }
 
     @Transactional
-    public Matricula reasignarGrupoPorEdad(Long alumnoId, Long nuevoHorarioId) {
+    public Matricula reasignarGrupoPorEdad(Long alumnoId, Long nuevoGrupoId) {
         Alumno alumno = alumnoRepository.findById(alumnoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Alumno no encontrado"));
-
-        Horario nuevoHorario = horarioRepository.findByIdConBloqueoOptimista(nuevoHorarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Horario no encontrado"));
-
-        Categoria nuevaCategoria = nuevoHorario.getCategoria();
+        Grupo grupo = grupoRepository.findByIdParaMatricula(nuevoGrupoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Grupo no encontrado"));
+        if (!Boolean.TRUE.equals(grupo.getActivo()) || grupo.getHorarios().isEmpty()) {
+            throw new ReglaNegocioException("El grupo seleccionado no está disponible.");
+        }
+        Categoria categoria = grupo.getCategoria();
         int edad = calcularEdadExacta(alumno.getPersona().getFechaNacimiento());
-        if (edad < nuevaCategoria.getEdadMinima() || edad > nuevaCategoria.getEdadMaxima()) {
-            throw new ReglaNegocioException(
-                    "La edad actual del alumno (" + edad + " años) no corresponde a la categoría del horario elegido ("
-                    + nuevaCategoria.getNombre() + ": " + nuevaCategoria.getEdadMinima() + "-" + nuevaCategoria.getEdadMaxima() + " años)."
-            );
+        if (edad < categoria.getEdadMinima() || edad > categoria.getEdadMaxima()) {
+            throw new ReglaNegocioException("La edad del alumno no corresponde a la categoría del grupo seleccionado.");
         }
-
-        long inscritos = matriculaRepository.countByHorarioIdAndEstado(nuevoHorario.getId(), EstadoMatricula.ACTIVA);
-        if (nuevoHorario.getCupoMaximo() != null && inscritos >= nuevoHorario.getCupoMaximo()) {
-            throw new ReglaNegocioException("El horario seleccionado ya alcanzó su cupo máximo.");
+        long inscritos = matriculaRepository.countByGrupoIdAndEstado(grupo.getId(), EstadoMatricula.ACTIVA);
+        if (inscritos >= grupo.getCupoMaximo()) {
+            throw new ReglaNegocioException("El grupo seleccionado ya alcanzó su cupo máximo.");
         }
-
-        List<Matricula> activas = matriculaRepository.findByAlumnoIdAndEstado(alumnoId, EstadoMatricula.ACTIVA);
-        for (Matricula m : activas) {
-            m.setEstado(EstadoMatricula.FINALIZADA);
-            matriculaRepository.save(m);
+        for (Matricula anterior : matriculaRepository.findByAlumnoIdAndEstado(alumnoId, EstadoMatricula.ACTIVA)) {
+            anterior.setEstado(EstadoMatricula.FINALIZADA);
+            matriculaRepository.save(anterior);
         }
-
-        Matricula nueva = new Matricula();
-        nueva.setAlumno(alumno);
-        nueva.setCategoria(nuevaCategoria);
-        nueva.setHorario(nuevoHorario);
-        nueva.setFechaMatricula(LocalDate.now(clock));
-        nueva.setEstado(EstadoMatricula.ACTIVA);
-
-        return matriculaRepository.save(nueva);
+        Matricula matricula = new Matricula();
+        matricula.setAlumno(alumno);
+        matricula.setGrupo(grupo);
+        matricula.setFechaMatricula(LocalDate.now(clock));
+        matricula.setEstado(EstadoMatricula.ACTIVA);
+        return matriculaRepository.save(matricula);
     }
 
     // ==================== LISTADO Y OPERACIONES ESTÁNDAR ====================
@@ -471,59 +469,42 @@ public class MatriculaService {
     }
 
     @Transactional
-    public Matricula registrarMatricula(Long alumnoId, Long categoriaId, Long horarioId) {
+    public Matricula registrarMatricula(Long alumnoId, Long categoriaId, Long grupoId) {
         Alumno alumno = alumnoRepository.findById(alumnoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Alumno no encontrado"));
-
         if (alumno.getEstado() != EstadoAlumno.ACTIVO) {
-            throw new ReglaNegocioException("Solo se pueden matricular alumnos en estado ACTIVO");
+            throw new ReglaNegocioException("Solo se pueden matricular alumnos ACTIVO.");
         }
-
-        Horario horario = horarioRepository.findByIdConBloqueoOptimista(horarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Horario no encontrado"));
-
-        Categoria categoria;
-        if (categoriaId != null) {
-            categoria = categoriaRepository.findById(categoriaId)
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada"));
-            if (!horario.getCategoria().getId().equals(categoria.getId())) {
-                throw new ReglaNegocioException("El horario seleccionado no pertenece a la categoría indicada");
-            }
-        } else {
-            categoria = horario.getCategoria();
+        Grupo grupo = grupoRepository.findByIdParaMatricula(grupoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Grupo no encontrado"));
+        Categoria categoria = grupo.getCategoria();
+        if (categoriaId != null && !categoria.getId().equals(categoriaId)) {
+            throw new ReglaNegocioException("El grupo no pertenece a la categoría indicada.");
         }
-
-        if (!Boolean.TRUE.equals(categoria.getActivo())) {
-            throw new ReglaNegocioException("La categoría seleccionada no está activa");
+        if (!Boolean.TRUE.equals(grupo.getActivo()) || !Boolean.TRUE.equals(categoria.getActivo())
+                || grupo.getHorarios().stream().noneMatch(h -> Boolean.TRUE.equals(h.getActivo()))) {
+            throw new ReglaNegocioException("El grupo no está disponible.");
         }
-
-        long inscritosActivos = matriculaRepository.countByHorarioIdAndEstado(horario.getId(), EstadoMatricula.ACTIVA);
-        if (horario.getCupoMaximo() != null && inscritosActivos >= horario.getCupoMaximo()) {
-            throw new ReglaNegocioException("El horario seleccionado ya alcanzó su cupo máximo (" + horario.getCupoMaximo() + ")");
+        if (matriculaRepository.countByGrupoIdAndEstado(grupoId, EstadoMatricula.ACTIVA) >= grupo.getCupoMaximo()) {
+            throw new ReglaNegocioException("El grupo seleccionado no tiene cupos libres.");
         }
-
-        LocalDate hoy = LocalDate.now(clock);
-        LocalDate fechaNacimiento = alumno.getPersona().getFechaNacimiento();
-        if (fechaNacimiento != null) {
-            int edad = Period.between(fechaNacimiento, hoy).getYears();
+        if (!matriculaRepository.findByAlumnoIdAndEstado(alumnoId, EstadoMatricula.ACTIVA).isEmpty()) {
+            throw new ReglaNegocioException("El alumno ya tiene una matrícula activa.");
+        }
+        LocalDate nacimiento = alumno.getPersona().getFechaNacimiento();
+        if (nacimiento != null) {
+            int edad = calcularEdadExacta(nacimiento);
             if (edad < categoria.getEdadMinima() || edad > categoria.getEdadMaxima()) {
-                throw new ReglaNegocioException(
-                        "La edad del alumno (" + edad + " años) no está en el rango de la categoría "
-                        + categoria.getNombre() + " (" + categoria.getEdadMinima() + " - " + categoria.getEdadMaxima() + " años)"
-                );
+                throw new ReglaNegocioException("La edad del alumno no corresponde a la categoría del grupo.");
             }
         }
-
         Matricula matricula = new Matricula();
         matricula.setAlumno(alumno);
-        matricula.setCategoria(categoria);
-        matricula.setHorario(horario);
-        matricula.setFechaMatricula(hoy);
+        matricula.setGrupo(grupo);
+        matricula.setFechaMatricula(LocalDate.now(clock));
         matricula.setEstado(EstadoMatricula.ACTIVA);
-
         Matricula guardada = matriculaRepository.save(matricula);
         pagoService.generarPrimeraMensualidadPorMatricula(guardada);
-
         return guardada;
     }
 

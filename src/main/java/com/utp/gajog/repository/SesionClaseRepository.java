@@ -21,7 +21,7 @@ public interface SesionClaseRepository extends JpaRepository<SesionClase, Long> 
     @Query("""
         SELECT s FROM SesionClase s
         JOIN FETCH s.horario h
-        JOIN FETCH h.categoria c
+        JOIN FETCH h.grupo g JOIN FETCH g.categoria c
         JOIN FETCH s.instructor i
         JOIN FETCH i.persona
         WHERE s.id = :id
@@ -31,7 +31,7 @@ public interface SesionClaseRepository extends JpaRepository<SesionClase, Long> 
     @Query("""
         SELECT s FROM SesionClase s
         JOIN FETCH s.horario h
-        JOIN FETCH h.categoria c
+        JOIN FETCH h.grupo g JOIN FETCH g.categoria c
         JOIN FETCH s.instructor i
         JOIN FETCH i.persona
         WHERE (:fecha IS NULL OR s.fecha = :fecha)
@@ -59,7 +59,7 @@ public interface SesionClaseRepository extends JpaRepository<SesionClase, Long> 
     @Query("""
         SELECT s FROM SesionClase s
         JOIN FETCH s.horario h
-        JOIN FETCH h.categoria
+        JOIN FETCH h.grupo g JOIN FETCH g.categoria
         JOIN FETCH s.instructor i
         JOIN FETCH i.persona
         ORDER BY s.fecha DESC, s.horaInicio DESC

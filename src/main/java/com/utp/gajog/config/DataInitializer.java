@@ -21,6 +21,7 @@ public class DataInitializer {
             CinturonRepository cinturonRepo,
             CategoriaRepository categoriaRepo,
             HorarioRepository horarioRepo,
+            GrupoRepository grupoRepo,
             CriterioExamenRepository criterioRepo,
             InstructorRepository instructorRepo,
             PersonaRepository personaRepo,
@@ -66,13 +67,17 @@ public class DataInitializer {
                 Categoria adultos = crearCategoria("Adultos", 18, 60);
                 categoriaRepo.saveAll(List.of(infantil, juvenil, adultos));
 
+                Grupo infantilA = crearGrupo(infantil, "Infantil A", 20, instructorPorDefecto);
+                Grupo juvenilA = crearGrupo(juvenil, "Juvenil A", 20, instructorPorDefecto);
+                Grupo adultosA = crearGrupo(adultos, "Adultos A", 25, instructorPorDefecto);
+                grupoRepo.saveAll(List.of(infantilA, juvenilA, adultosA));
                 horarioRepo.saveAll(List.of(
-                        crearHorario(infantil, DiaSemana.LUNES, LocalTime.of(16, 0), LocalTime.of(17, 30), 20, "Sala A", instructorPorDefecto),
-                        crearHorario(infantil, DiaSemana.MIERCOLES, LocalTime.of(16, 0), LocalTime.of(17, 30), 20, "Sala A", instructorPorDefecto),
-                        crearHorario(juvenil, DiaSemana.MARTES, LocalTime.of(17, 30), LocalTime.of(19, 0), 20, "Sala A", instructorPorDefecto),
-                        crearHorario(juvenil, DiaSemana.JUEVES, LocalTime.of(17, 30), LocalTime.of(19, 0), 20, "Sala A", instructorPorDefecto),
-                        crearHorario(adultos, DiaSemana.VIERNES, LocalTime.of(19, 0), LocalTime.of(20, 30), 25, "Sala B", instructorPorDefecto),
-                        crearHorario(adultos, DiaSemana.SABADO, LocalTime.of(9, 0), LocalTime.of(11, 0), 25, "Sala B", instructorPorDefecto)
+                        crearHorario(infantilA, DiaSemana.LUNES, LocalTime.of(16, 0), LocalTime.of(17, 30), "Sala A"),
+                        crearHorario(infantilA, DiaSemana.MIERCOLES, LocalTime.of(16, 0), LocalTime.of(17, 30), "Sala A"),
+                        crearHorario(juvenilA, DiaSemana.MARTES, LocalTime.of(17, 30), LocalTime.of(19, 0), "Sala A"),
+                        crearHorario(juvenilA, DiaSemana.JUEVES, LocalTime.of(17, 30), LocalTime.of(19, 0), "Sala A"),
+                        crearHorario(adultosA, DiaSemana.VIERNES, LocalTime.of(19, 0), LocalTime.of(20, 30), "Sala B"),
+                        crearHorario(adultosA, DiaSemana.SABADO, LocalTime.of(9, 0), LocalTime.of(11, 0), "Sala B")
                 ));
             }
 
@@ -171,24 +176,25 @@ public class DataInitializer {
         return cat;
     }
 
-    private Horario crearHorario(
-            Categoria cat,
-            DiaSemana dia,
-            LocalTime inicio,
-            LocalTime fin,
-            int cupoMaximo,
-            String sala,
-            Instructor instructor
-    ) {
-        Horario h = new Horario();
-        h.setCategoria(cat);
-        h.setDiaSemana(dia);
-        h.setHoraInicio(inicio);
-        h.setHoraFin(fin);
-        h.setCupoMaximo(cupoMaximo);
-        h.setSala(sala);
-        h.setInstructor(instructor);
-        return h;
+    private Grupo crearGrupo(Categoria categoria, String nombre, int cupoMaximo, Instructor instructor) {
+        Grupo grupo = new Grupo();
+        grupo.setCategoria(categoria);
+        grupo.setNombre(nombre);
+        grupo.setInstructor(instructor);
+        grupo.setCupoMaximo(cupoMaximo);
+        grupo.setActivo(true);
+        return grupo;
+    }
+
+    private Horario crearHorario(Grupo grupo, DiaSemana dia, LocalTime inicio, LocalTime fin, String sala) {
+        Horario horario = new Horario();
+        horario.setGrupo(grupo);
+        horario.setDiaSemana(dia);
+        horario.setHoraInicio(inicio);
+        horario.setHoraFin(fin);
+        horario.setSala(sala);
+        horario.setActivo(true);
+        return horario;
     }
 
     private CriterioExamen crearCriterio(String nombre, BigDecimal puntajeMaximo) {

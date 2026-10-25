@@ -114,11 +114,11 @@ public class AlumnoWebController {
     @PostMapping("/{id}/reasignar-grupo")
     public String reasignarGrupoPorEdad(
             @PathVariable Long id,
-            @RequestParam Long nuevoHorarioId,
+            @RequestParam Long nuevoGrupoId,
             RedirectAttributes redirectAttributes
     ) {
         try {
-            matriculaService.reasignarGrupoPorEdad(id, nuevoHorarioId);
+            matriculaService.reasignarGrupoPorEdad(id, nuevoGrupoId);
             redirectAttributes.addFlashAttribute("exito", "Alumno reasignado exitosamente a su nueva categoría y horario.");
         } catch (Exception e) {
             manejarExcepcion(e, redirectAttributes);

@@ -12,7 +12,7 @@
             <div class="mb-4">
                 <div class="gajog-eyebrow" th:text="${'NUEVA MATRÍCULA / PASO ' + pasoActual + ' DE 3'}">NUEVA MATRÍCULA</div>
                 <h1 class="gajog-page-title"
-                    th:text="${pasoActual == 1 ? 'Registrar alumno' : (pasoActual == 2 ? 'Revisión y categoría por edad' : 'Asignar horario')}">
+                    th:text="${pasoActual == 1 ? 'Registrar alumno' : (pasoActual == 2 ? 'Revisión y categoría por edad' : 'Asignar grupo')}">
                     Registrar alumno
                 </h1>
                 <p class="gajog-page-subtitle"
@@ -184,7 +184,7 @@
                 <div class="row g-4">
                     <div class="col-lg-8">
                         <div class="card p-4">
-                            <h4 class="fw-bold mb-1">Horarios disponibles</h4>
+                            <h4 class="fw-bold mb-1">Grupos disponibles</h4>
                             <p class="small text-muted mb-3">Filtra por categoría, día o turno y selecciona un grupo con cupos disponibles.</p>
 
                             <!-- Filtros del Paso 3 (Categoría y/o Día/Turno) -->
@@ -218,7 +218,7 @@
 
                             <form th:action="@{/matriculas/nueva/confirmar}" th:object="${wizardMatricula}" method="post">
                                 <div th:if="${#lists.isEmpty(horariosDisponibles)}" class="py-4 text-center text-muted">
-                                    No hay horarios que coincidan con el filtro seleccionado.
+                                    No hay grupos que coincidan con el filtro seleccionado.
                                 </div>
 
                                 <div class="d-flex flex-column gap-3 mb-4">
@@ -227,11 +227,11 @@
                                            th:style="${h.tieneCupo() && h.categoriaId == wizardMatricula.categoriaAsignadaId ? 'border: 1px solid var(--gajog-accent); background-color: rgba(220,38,38,0.06); cursor: pointer;' : 'border: 1px solid var(--gajog-border); opacity: 0.65;'}">
                                         <div class="d-flex align-items-center gap-3">
                                             <input type="radio" class="form-check-input mt-0"
-                                                   th:field="*{horarioSeleccionadoId}" th:value="${h.id}"
+                                                   th:field="*{grupoSeleccionadoId}" th:value="${h.id}"
                                                    th:disabled="${!h.tieneCupo() || h.categoriaId != wizardMatricula.categoriaAsignadaId}" required>
                                             <div>
                                                 <div class="fw-bold" th:text="${h.diaSemana + ' · ' + h.horaInicio + ' – ' + h.horaFin}">Lunes y miércoles</div>
-                                                <small class="text-muted" th:text="${h.sala + ' ·Categoría: ' + h.categoriaNombre + ' · ' + h.instructorNombre}"></small>
+                                                <small class="text-muted" th:text="${h.grupoNombre + ' · Categoría: ' + h.categoriaNombre + ' · ' + h.instructorNombre}"></small>
                                             </div>
                                         </div>
                                         <div class="text-end">
@@ -280,7 +280,7 @@
                             </div>
 
                             <div class="gajog-info-note">
-                                Al confirmar, el alumno quedará matriculado en el horario seleccionado y se generará su primera cuota mensual en una sola operación.
+                                Al confirmar, el alumno quedará matriculado en el grupo seleccionado y se generará su primera cuota mensual en una sola operación.
                             </div>
                         </div>
                     </div>

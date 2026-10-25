@@ -82,12 +82,12 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
                    SELECT 1 FROM Matricula mat
                    WHERE mat.alumno.id = a.id
                      AND mat.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND mat.categoria.id = :categoriaId))
+                     AND mat.grupo.categoria.id = :categoriaId))
               AND (:horarioId IS NULL OR EXISTS (
                    SELECT 1 FROM Matricula mat2
                    WHERE mat2.alumno.id = a.id
                      AND mat2.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND mat2.horario.id = :horarioId))
+                     AND EXISTS (SELECT 1 FROM Horario hh WHERE hh.grupo = mat2.grupo AND hh.id = :horarioId)))
             ORDER BY p.fechaPago DESC
         """,
         countQuery = """
@@ -106,12 +106,12 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
                    SELECT 1 FROM Matricula mat
                    WHERE mat.alumno.id = a.id
                      AND mat.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND mat.categoria.id = :categoriaId))
+                     AND mat.grupo.categoria.id = :categoriaId))
               AND (:horarioId IS NULL OR EXISTS (
                    SELECT 1 FROM Matricula mat2
                    WHERE mat2.alumno.id = a.id
                      AND mat2.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND mat2.horario.id = :horarioId))
+                     AND EXISTS (SELECT 1 FROM Horario hh WHERE hh.grupo = mat2.grupo AND hh.id = :horarioId)))
         """
     )
     Page<Pago> buscarPagosDelPeriodo(

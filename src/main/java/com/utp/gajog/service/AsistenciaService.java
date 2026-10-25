@@ -100,7 +100,8 @@ public class AsistenciaService {
         if (horarioElegido == null) {
             // Hay más de un horario candidato y el operador debe elegir cuál corresponde
             List<OpcionHorarioAsistenciaDTO> opciones = matriculasActivas.stream()
-                    .map(Matricula::getHorario)
+                    .flatMap(m -> m.getGrupo().getHorarios().stream())
+                    .filter(h -> Boolean.TRUE.equals(h.getActivo()))
                     .map(h -> new OpcionHorarioAsistenciaDTO(
                             h.getId(),
                             h.getCategoria().getNombre(),
@@ -428,7 +429,9 @@ public class AsistenciaService {
 
                     List<Matricula> activas = matriculaRepository.findByAlumnoIdAndEstado(a.getId(), EstadoMatricula.ACTIVA);
                     String cat = activas.isEmpty() ? "Sin matrícula" : activas.getFirst().getCategoria().getNombre();
-                    String hor = activas.isEmpty() ? "-" : (activas.getFirst().getHorario().getDiaSemana() + " " + activas.getFirst().getHorario().getHoraInicio());
+                    String hor = activas.isEmpty() ? "-" : activas.getFirst().getGrupo().getHorarios().stream()
+                            .map(h -> h.getDiaSemana() + " " + h.getHoraInicio())
+                            .collect(Collectors.joining(" · "));
 
                     EstadoMensualidadInfo infoMens = evaluarEstadoMensualidadAlumno(a.getId(), hoy);
                     return new AlumnoBusquedaAsistenciaDTO(
@@ -557,14 +560,15 @@ public class AsistenciaService {
     ) {
         if (horarioSeleccionadoId != null) {
             return matriculasActivas.stream()
-                    .map(Matricula::getHorario)
-                    .filter(h -> h.getId().equals(horarioSeleccionadoId))
+                    .flatMap(m -> m.getGrupo().getHorarios().stream())
+                    .filter(h -> Boolean.TRUE.equals(h.getActivo()) && h.getId().equals(horarioSeleccionadoId))
                     .findFirst()
                     .orElseThrow(() -> new ReglaNegocioException("El alumno no está matriculado en el horario seleccionado."));
         }
 
         List<Horario> delDiaHoy = matriculasActivas.stream()
-                .map(Matricula::getHorario)
+                .flatMap(m -> m.getGrupo().getHorarios().stream())
+                .filter(h -> Boolean.TRUE.equals(h.getActivo()))
                 .filter(h -> h.getDiaSemana() == diaHoy)
                 .toList();
 
@@ -575,7 +579,8 @@ public class AsistenciaService {
             return null; // Pide elegir
         }
         if (matriculasActivas.size() == 1) {
-            return matriculasActivas.getFirst().getHorario();
+            return matriculasActivas.getFirst().getGrupo().getHorarios().stream()
+                    .filter(h -> Boolean.TRUE.equals(h.getActivo())).findFirst().orElse(null);
         }
         return null; // Pide elegir
     }

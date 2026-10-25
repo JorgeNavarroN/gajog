@@ -48,8 +48,8 @@
                             <tr>
                                 <th>Categoría</th>
                                 <th>Día</th>
-                                <th>Horario</th>
-                                <th>Sala</th>
+                                <th>Horarios del grupo</th>
+                                <th>Grupo</th>
                                 <th>Instructor</th>
                                 <th>Ocupación</th>
                                 <th>Cupos disponibles</th>
@@ -60,7 +60,7 @@
                                 <td class="fw-bold" th:text="${h.categoriaNombre}"></td>
                                 <td th:text="${h.diaSemana}"></td>
                                 <td th:text="${h.horaInicio + ' - ' + h.horaFin}"></td>
-                                <td th:text="${h.sala}"></td>
+                                <td th:text="${h.horariosTexto}"></td>
                                 <td th:text="${h.instructorNombre}"></td>
                                 <td th:text="${h.inscritosActivos + ' / ' + h.cupoMaximo}"></td>
                                 <td>

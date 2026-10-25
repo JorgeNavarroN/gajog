@@ -66,6 +66,7 @@ public class MatriculaWizardDTO implements Serializable {
     private Long filtroCategoriaPaso3Id;
     private DiaSemana filtroDiaPaso3;
     private String filtroTurnoPaso3;
+    // El identificador seleccionado ahora es del GRUPO (se conserva alias de compatibilidad).
     private Long horarioSeleccionadoId;
 
     private boolean paso1Completado = false;
@@ -270,6 +271,9 @@ public class MatriculaWizardDTO implements Serializable {
     public void setFiltroTurnoPaso3(String filtroTurnoPaso3) {
         this.filtroTurnoPaso3 = filtroTurnoPaso3;
     }
+
+    public Long getGrupoSeleccionadoId() { return horarioSeleccionadoId; }
+    public void setGrupoSeleccionadoId(Long grupoId) { this.horarioSeleccionadoId = grupoId; }
 
     public Long getHorarioSeleccionadoId() {
         return horarioSeleccionadoId;

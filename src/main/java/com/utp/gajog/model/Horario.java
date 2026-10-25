@@ -1,9 +1,6 @@
 package com.utp.gajog.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalTime;
 
 @Entity
@@ -14,13 +11,16 @@ public class Horario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private Categoria categoria;
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "grupo_id", nullable = false)
+    private Grupo grupo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "instructor_id")
-    private Instructor instructor;
+    @Column(nullable = false)
+    private Boolean activo = true;
+
+    @Transient private Categoria categoriaLegacy;
+    @Transient private Instructor instructorLegacy;
+    @Transient private Integer cupoLegacy = 20;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "dia_semana", nullable = false, length = 15)
@@ -32,12 +32,7 @@ public class Horario {
     @Column(name = "hora_fin", nullable = false)
     private LocalTime horaFin;
 
-    @NotNull
-    @Min(value = 1, message = "El cupo máximo debe ser mayor a 0")
-    @Column(name = "cupo_maximo", nullable = false)
-    private Integer cupoMaximo = 20;
-
-    @NotBlank
+@NotBlank
     @Column(name = "sala", nullable = false, length = 60)
     private String sala = "Sala Principal";
 
@@ -56,21 +51,17 @@ public class Horario {
         this.id = id;
     }
 
-    public Categoria getCategoria() {
-        return categoria;
-    }
+    public Grupo getGrupo() { return grupo; }
+    public void setGrupo(Grupo grupo) { this.grupo = grupo; }
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean activo) { this.activo = activo; }
+    @Transient
+    public Categoria getCategoria() { return grupo != null ? grupo.getCategoria() : categoriaLegacy; }
+    public void setCategoria(Categoria categoria) { this.categoriaLegacy = categoria; }
 
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
-
-    public Instructor getInstructor() {
-        return instructor;
-    }
-
-    public void setInstructor(Instructor instructor) {
-        this.instructor = instructor;
-    }
+    @Transient
+    public Instructor getInstructor() { return grupo != null ? grupo.getInstructor() : instructorLegacy; }
+    public void setInstructor(Instructor instructor) { this.instructorLegacy = instructor; }
 
     public DiaSemana getDiaSemana() {
         return diaSemana;
@@ -96,13 +87,9 @@ public class Horario {
         this.horaFin = horaFin;
     }
 
-    public Integer getCupoMaximo() {
-        return cupoMaximo;
-    }
-
-    public void setCupoMaximo(Integer cupoMaximo) {
-        this.cupoMaximo = cupoMaximo;
-    }
+    @Transient
+    public Integer getCupoMaximo() { return grupo != null ? grupo.getCupoMaximo() : cupoLegacy; }
+    public void setCupoMaximo(Integer cupoMaximo) { this.cupoLegacy = cupoMaximo; }
 
     public String getSala() {
         return sala;

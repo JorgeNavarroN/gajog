@@ -10,13 +10,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface HorarioRepository extends JpaRepository<Horario, Long> {
-    List<Horario> findByCategoriaId(Long categoriaId);
+    @Query("SELECT h FROM Horario h WHERE h.grupo.categoria.id = :categoriaId AND h.activo = true")
+    List<Horario> findByCategoriaId(@Param("categoriaId") Long categoriaId);
     List<Horario> findByDiaSemana(DiaSemana diaSemana);
 
     @Query("""
         SELECT h FROM Horario h
-        JOIN FETCH h.categoria c
-        LEFT JOIN FETCH h.instructor i
+        JOIN FETCH h.grupo g
+        JOIN FETCH g.categoria c
+        LEFT JOIN FETCH g.instructor i
         LEFT JOIN FETCH i.persona
         WHERE h.id = :id
     """)
@@ -24,10 +26,11 @@ public interface HorarioRepository extends JpaRepository<Horario, Long> {
 
     @Query("""
         SELECT h FROM Horario h
-        JOIN FETCH h.categoria c
-        LEFT JOIN FETCH h.instructor i
+        JOIN FETCH h.grupo g
+        JOIN FETCH g.categoria c
+        LEFT JOIN FETCH g.instructor i
         LEFT JOIN FETCH i.persona
-        WHERE (:categoriaId IS NULL OR c.id = :categoriaId)
+        WHERE h.activo = true AND g.activo = true AND (:categoriaId IS NULL OR c.id = :categoriaId)
           AND (:diaSemana IS NULL OR h.diaSemana = :diaSemana)
         ORDER BY c.edadMinima ASC, h.diaSemana ASC, h.horaInicio ASC
     """)

@@ -22,7 +22,7 @@ public class MatriculaController {
     public record RegistroMatriculaRequest(
             Long alumnoId,
             Long categoriaId,
-            Long horarioId
+            Long grupoId
     ) {}
 
     @PostMapping
@@ -30,7 +30,7 @@ public class MatriculaController {
         Matricula matricula = matriculaService.registrarMatricula(
                 request.alumnoId(),
                 request.categoriaId(),
-                request.horarioId()
+                request.grupoId()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(matricula);
     }

@@ -103,12 +103,12 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long> {
                    SELECT 1 FROM Matricula m
                    WHERE m.alumno.id = a.id
                      AND m.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND m.categoria.id = :categoriaId))
+                     AND m.grupo.categoria.id = :categoriaId))
               AND (:horarioId IS NULL OR EXISTS (
                    SELECT 1 FROM Matricula m2
                    WHERE m2.alumno.id = a.id
                      AND m2.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND m2.horario.id = :horarioId))
+                     AND EXISTS (SELECT 1 FROM Horario hh WHERE hh.grupo = m2.grupo AND hh.id = :horarioId)))
               AND (:estadoMensualidad IS NULL OR EXISTS (
                    SELECT 1 FROM Mensualidad men
                    WHERE men.alumno.id = a.id
@@ -131,12 +131,12 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long> {
                    SELECT 1 FROM Matricula m
                    WHERE m.alumno.id = a.id
                      AND m.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND m.categoria.id = :categoriaId))
+                     AND m.grupo.categoria.id = :categoriaId))
               AND (:horarioId IS NULL OR EXISTS (
                    SELECT 1 FROM Matricula m2
                    WHERE m2.alumno.id = a.id
                      AND m2.estado = com.utp.gajog.model.EstadoMatricula.ACTIVA
-                     AND m2.horario.id = :horarioId))
+                     AND EXISTS (SELECT 1 FROM Horario hh WHERE hh.grupo = m2.grupo AND hh.id = :horarioId)))
               AND (:estadoMensualidad IS NULL OR EXISTS (
                    SELECT 1 FROM Mensualidad men
                    WHERE men.alumno.id = a.id

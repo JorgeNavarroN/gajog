@@ -5,6 +5,7 @@
 package com.utp.gajog.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
 
 @Entity
@@ -19,13 +20,12 @@ public class Matricula {
     @JoinColumn(name = "alumno_id", nullable = false)
     private Alumno alumno;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private Categoria categoria;
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "grupo_id", nullable = false)
+    private Grupo grupo;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "horario_id", nullable = false)
-    private Horario horario;
+    @Transient private Categoria categoriaLegacy;
+    @Transient private Horario horarioLegacy;
 
     @Column(name = "fecha_matricula", nullable = false)
     private LocalDate fechaMatricula;
@@ -53,20 +53,18 @@ public class Matricula {
         this.alumno = alumno;
     }
 
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
-
+    public Grupo getGrupo() { return grupo; }
+    public void setGrupo(Grupo grupo) { this.grupo = grupo; }
+    @JsonIgnore @Transient
+    public Categoria getCategoria() { return grupo != null ? grupo.getCategoria() : categoriaLegacy; }
+    public void setCategoria(Categoria categoria) { this.categoriaLegacy = categoria; }
+    @JsonIgnore @Transient
     public Horario getHorario() {
-        return horario;
+        return grupo != null && !grupo.getHorarios().isEmpty() ? grupo.getHorarios().getFirst() : horarioLegacy;
     }
-
     public void setHorario(Horario horario) {
-        this.horario = horario;
+        this.horarioLegacy = horario;
+        if (horario != null && horario.getGrupo() != null) this.grupo = horario.getGrupo();
     }
 
     public LocalDate getFechaMatricula() {

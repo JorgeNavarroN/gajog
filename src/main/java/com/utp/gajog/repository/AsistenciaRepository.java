@@ -29,7 +29,7 @@ public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
         SELECT a FROM Asistencia a
         JOIN FETCH a.sesion s
         JOIN FETCH s.horario h
-        JOIN FETCH h.categoria c
+        JOIN FETCH h.grupo g JOIN FETCH g.categoria c
         WHERE a.alumno.id = :alumnoId
         ORDER BY s.fecha DESC, a.fechaRegistro DESC
     """)
@@ -44,7 +44,7 @@ public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
             SELECT a FROM Asistencia a
             JOIN FETCH a.sesion s
             JOIN FETCH s.horario h
-            JOIN FETCH h.categoria c
+            JOIN FETCH h.grupo g JOIN FETCH g.categoria c
             JOIN FETCH a.alumno al
             JOIN FETCH al.persona p
             LEFT JOIN FETCH al.cinturonActual cin
@@ -61,7 +61,7 @@ public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
             SELECT COUNT(a) FROM Asistencia a
             JOIN a.sesion s
             JOIN s.horario h
-            JOIN h.categoria c
+            JOIN h.grupo g JOIN g.categoria c
             JOIN a.alumno al
             JOIN al.persona p
             WHERE (:fecha IS NULL OR s.fecha = :fecha)
