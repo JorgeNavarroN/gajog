@@ -4,6 +4,7 @@
  */
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.EstadoAsistencia;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

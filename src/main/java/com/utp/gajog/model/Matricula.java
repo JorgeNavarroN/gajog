@@ -4,6 +4,7 @@
  */
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.EstadoMatricula;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -20,12 +21,8 @@ public class Matricula {
     private Alumno alumno;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private Categoria categoria;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "horario_id", nullable = false)
-    private Horario horario;
+    @JoinColumn(name = "grupo_id", nullable = false)
+    private Grupo grupo;
 
     @Column(name = "fecha_matricula", nullable = false)
     private LocalDate fechaMatricula;
@@ -53,22 +50,6 @@ public class Matricula {
         this.alumno = alumno;
     }
 
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
-
-    public Horario getHorario() {
-        return horario;
-    }
-
-    public void setHorario(Horario horario) {
-        this.horario = horario;
-    }
-
     public LocalDate getFechaMatricula() {
         return fechaMatricula;
     }
@@ -83,5 +64,13 @@ public class Matricula {
 
     public void setEstado(EstadoMatricula estado) {
         this.estado = estado;
+    }
+
+    public Grupo getGrupo() {
+        return grupo;
+    }
+
+    public void setGrupo(Grupo grupo) {
+        this.grupo = grupo;
     }
 }

@@ -4,9 +4,10 @@
  */
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.EstadoAlumno;
+import com.utp.gajog.enums.Parentesco;
 import jakarta.persistence.*;
 import java.time.LocalDate;
-
 
 @Entity
 @Table(name = "alumnos")
@@ -27,6 +28,10 @@ public class Alumno {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "apoderado_id")
     private Apoderado apoderado;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "parentesco_apoderado", length = 20)
+    private Parentesco parentescoApoderado;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cinturon_actual_id")
@@ -88,5 +93,13 @@ public class Alumno {
 
     public void setEstado(EstadoAlumno estado) {
         this.estado = estado;
+    }
+
+    public Parentesco getParentescoApoderado() {
+        return parentescoApoderado;
+    }
+
+    public void setParentescoApoderado(Parentesco parentescoApoderado) {
+        this.parentescoApoderado = parentescoApoderado;
     }
 }

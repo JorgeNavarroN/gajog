@@ -4,6 +4,7 @@
  */
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.ResultadoExamen;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;

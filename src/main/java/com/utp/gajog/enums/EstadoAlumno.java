@@ -2,11 +2,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Enum.java to edit this template
  */
-package com.utp.gajog.model;
+package com.utp.gajog.enums;
 
 
-public enum ResultadoExamen {
-    PENDIENTE,
-    APROBADO,
-    REPROBADO
+public enum EstadoAlumno {
+    ACTIVO,
+    INACTIVO,
+    RETIRADO
 }
