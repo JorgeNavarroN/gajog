@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Pago de matrícula',
+      'nueva-matricula',
+      ~{::contenido}
+      )}">
+
+    <body>
+
+        <section th:fragment="contenido"
+                 class="registro"
+                 id="pantalla-pago"
+                 th:attr="data-dni=${registroMatricula.dni}">
+
+            <div class="etiqueta">NUEVA MATRÍCULA / PASO 3 DE 3</div>
+
+            <h1 class="titulo">Pago de matrícula</h1>
+
+            <p class="descripcion">
+                Revisa el importe y los datos del pago recibido.
+            </p>
+
+            <div class="pasos">
+                <span>✓ Datos</span>
+                <span>✓ Horario</span>
+                <span class="actual" aria-current="step">3. Pago</span>
+            </div>
+
+            <form class="panel"
+                  id="formulario-pago"
+                  method="post"
+                  th:action="@{/matriculas/nueva/confirmar}">
+
+                <input type="hidden" id="grupoId" name="grupoId">
+
+                <div class="asignacion-grilla">
+
+                    <section>
+
+                        <h2>Datos del pago</h2>
+
+                        <div class="caja-categoria">
+
+                            <div>Importe de matrícula</div>
+
+                            <strong style="font-size: 30px;">
+                                S/ 30.00
+                            </strong>
+
+                        </div>
+
+                        <div class="campo">
+
+                            <label for="medioPago">
+                                Medio de pago *
+                            </label>
+
+                            <select id="medioPago" disabled required>
+                                <option value="">Seleccionar medio</option>
+                                <option value="EFECTIVO">Efectivo</option>
+                                <option value="YAPE">Yape</option>
+                                <option value="PLIN">Plin</option>
+                                <option value="TRANSFERENCIA">
+                                    Transferencia
+                                </option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+
+                        </div>
+
+                        <label style="display: flex;
+                               align-items: flex-start;
+                               gap: 10px;
+                               margin-top: 24px;
+                               line-height: 1.6;">
+
+                            <input type="checkbox"
+                                   id="pagoRecibido"
+                                   required
+                                   disabled
+                                   style="width: 17px;
+                                   min-height: 17px;
+                                   margin-top: 3px;
+                                   accent-color: var(--rojo);">
+
+                            <span>
+                                Confirmo que recibí el pago de matrícula
+                                por el importe indicado.
+                            </span>
+
+                        </label>
+
+                        <p class="descripcion" style="margin-top: 22px;">
+                            La primera mensualidad se gestiona
+                            por separado.
+                        </p>
+
+                    </section>
+
+                    <aside class="resumen-matricula">
+
+                        <h2>Resumen de inscripción</h2>
+
+                        <p>Alumno</p>
+
+                        <strong th:text="|${registroMatricula.nombres} ${registroMatricula.apellidos}|">
+                        </strong>
+
+                        <p>DNI</p>
+
+                        <strong th:text="${registroMatricula.dni}">
+                        </strong>
+
+                        <p>Categoría</p>
+
+                        <strong th:text="${categoriaAsignada.nombre}">
+                        </strong>
+
+                        <hr class="separador">
+
+                        <p>Grupo seleccionado</p>
+
+                        <strong id="grupo-elegido">
+                            Selecciona un grupo en el paso anterior
+                        </strong>
+
+                        <ul id="horarios-elegidos"
+                            class="horarios-grupo"
+                            style="margin-left: 0;">
+                        </ul>
+
+                    </aside>
+
+                </div>
+
+                <!-- <p id="aviso-demostracion"
+                   class="caja-categoria"
+                   role="status"
+                   hidden>
+                    Esta pantalla es visual para las capturas.
+                    No se guardaron matrícula ni pago.
+                </p> -->
+
+                <div class="acciones-formulario">
+
+                    <a th:href="@{/matriculas/nueva/paso-2}"
+                       class="boton">
+                        ← Anterior
+                    </a>
+
+                    <button type="submit"
+                            id="confirmar-matricula"
+                            class="boton boton-primario"
+                            disabled>
+                        Confirmar matrícula
+                    </button>
+
+                </div>
+
+            </form>
+
+            <!--
+                Datos reales proporcionados por el controlador actual.
+                El paso 2 los consulta para mostrar las opciones.
+            -->
+            <div id="grupos-para-captura" hidden>
+
+                <label class="opcion-grupo"
+                       th:each="grupo : ${gruposDisponibles}"
+                       th:attr="data-nombre=${grupo.nombre()}">
+
+                    <div class="opcion-grupo-cabecera">
+
+                        <input type="radio"
+                               name="grupoVisual"
+                               th:value="${grupo.id()}"
+                               th:disabled="${grupo.vacantes() == 0}"
+                               required>
+
+                        <strong th:text="${grupo.nombre()}">
+                        </strong>
+
+                        <span class="estado"
+                              th:classappend="${grupo.vacantes() > 0
+                              ? 'estado-activo'
+                              : 'estado-pendiente'}"
+                              th:text="${grupo.vacantes() > 0
+                              ? grupo.vacantes() + ' vacantes'
+                              : 'Completo'}">
+                        </span>
+
+                    </div>
+
+                    <ul class="horarios-grupo">
+
+                        <li data-horario
+                            th:each="horario : ${grupo.horarios()}"
+                            th:text="|${horario.dia()} · ${horario.inicio()}–${horario.fin()}|">
+                        </li>
+
+                    </ul>
+
+                </label>
+
+                <p class="descripcion"
+                   th:if="${#lists.isEmpty(gruposDisponibles)}">
+                    No hay grupos activos con horarios para esta categoría.
+                </p>
+
+            </div>
+
+            <script>
+                (() => {
+                const pantalla = document.getElementById("pantalla-pago");
+
+                const clave =
+                "gajog-captura-grupo-" + pantalla.dataset.dni;
+
+                let seleccion = null;
+
+                try {
+                seleccion = JSON.parse(
+                sessionStorage.getItem(clave)
+                );
+                } catch {
+                // No hay una selección válida.
+                }
+
+                const opciones = [
+                ...document.querySelectorAll(
+                '#grupos-para-captura input[name="grupoVisual"]'
+                )
+                ];
+
+                const radio = opciones.find(opcion =>
+                seleccion &&
+                opcion.value === String(seleccion.id) &&
+                !opcion.disabled
+                );
+
+                if (!radio) {
+                return;
+                }
+
+                const tarjeta = radio.closest("label");
+
+                document.getElementById("grupo-elegido")
+                .textContent = tarjeta.dataset.nombre;
+
+                const lista = document.getElementById(
+                "horarios-elegidos"
+                );
+
+                tarjeta.querySelectorAll("[data-horario]")
+                .forEach(horario => {
+                const elemento = document.createElement("li");
+
+                elemento.textContent =
+                horario.textContent.trim();
+
+                lista.append(elemento);
+                });
+
+                document.getElementById("grupoId").value = radio.value;
+
+                document.getElementById(
+                "confirmar-matricula"
+                ).disabled = false;
+                })();
+            </script>
+
+        </section>
+
+    </body>
+</html>

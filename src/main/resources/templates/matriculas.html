@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Matrículas',
+      'matriculas',
+      ~{::contenido}
+      )}">
+
+    <body>
+
+        <section th:fragment="contenido">
+
+            <div class="encabezado-pagina">
+
+                <div>
+                    <div class="etiqueta">ADMINISTRACIÓN</div>
+
+                    <h1 class="titulo">Matrículas</h1>
+
+                    <p class="descripcion">
+                        Consulta los alumnos matriculados y sus horarios.
+                    </p>
+                </div>
+
+                <a th:href="@{/matriculas/nueva/paso-1}"
+                   class="boton boton-primario">
+                    + Nueva matrícula
+                </a>
+
+            </div>
+
+            <div class="caja-categoria"
+                 role="status"
+                 th:if="${exito != null}"
+                 th:text="${exito}">
+            </div>
+
+            <div class="panel">
+
+                <form th:action="@{/matriculas}" method="get">
+
+                    <div class="barra-filtros">
+
+                        <div class="campo">
+                            <label for="busqueda">Alumno o DNI</label>
+
+                            <input type="search"
+                                   id="busqueda"
+                                   name="busqueda"
+                                   th:value="${busqueda}"
+                                   placeholder="Buscar por nombre o documento">
+                        </div>
+
+                        <div class="campo">
+                            <label for="categoriaId">Categoría</label>
+
+                            <select id="categoriaId" name="categoriaId">
+
+                                <option value="">Todas las categorías</option>
+
+                                <option th:each="categoria : ${categorias}"
+                                        th:value="${categoria.id}"
+                                        th:text="${categoria.nombre}"
+                                        th:selected="${categoria.id == categoriaId}">
+                                </option>
+
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="grupoId">Grupo / horario</label>
+
+                            <select id="grupoId" name="grupoId">
+
+                                <option value="">Todos los grupos</option>
+
+                                <option th:each="grupo : ${grupos}"
+                                        th:value="${grupo.id}"
+                                        th:text="${grupo.nombre}"
+                                        th:selected="${grupo.id == grupoId}">
+                                </option>
+
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="estado">Estado</label>
+
+                            <select id="estado" name="estado">
+
+                                <option value="">Todos los estados</option>
+
+                                <option th:each="estado : ${estados}"
+                                        th:value="${estado.name()}"
+                                        th:text="${estado.name()}"
+                                        th:selected="${estado == estadoSeleccionado}">
+                                </option>
+
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 22px;">
+
+                        <button type="submit"
+                                class="boton boton-primario">
+                            Filtrar
+                        </button>
+
+                        <a th:href="@{/matriculas}" class="boton">
+                            Limpiar
+                        </a>
+
+                    </div>
+
+                </form>
+
+                <div class="tabla-contenedor">
+
+                    <table class="tabla">
+
+                        <thead>
+                            <tr>
+                                <th>Alumno</th>
+                                <th>DNI</th>
+                                <th>Apoderado</th>
+                                <th>Categoría</th>
+                                <th>Grupo / horario</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <tr th:each="matricula : ${matriculas}">
+
+                                <td>
+                                    <strong th:text="|${matricula.alumno.persona.nombres} ${matricula.alumno.persona.apellidos}|">
+                                    </strong>
+
+                                    <small th:text="|Matrícula N.º ${matricula.id}|">
+                                    </small>
+                                </td>
+
+                                <td th:text="${matricula.alumno.persona.dni}">
+                                </td>
+
+                                <td th:text="${matricula.alumno.apoderado != null
+                                    ? matricula.alumno.apoderado.persona.nombres
+                                    + ' '
+                                    + matricula.alumno.apoderado.persona.apellidos
+                                    : 'No registrado'}">
+                                </td>
+
+                                <td th:text="${matricula.grupo.categoria.nombre}">
+                                </td>
+
+                                <td>
+                                    <strong th:text="${matricula.grupo.nombre}">
+                                    </strong>
+
+                                    <small th:each="horario : ${matricula.grupo.horarios}"
+                                           th:text="|${horario.diaSemana} · ${horario.horaInicio}–${horario.horaFin}|">
+                                    </small>
+
+                                    <small th:if="${#lists.isEmpty(matricula.grupo.horarios)}">
+                                        Sin horarios asignados
+                                    </small>
+                                </td>
+
+                                <td>
+                                    <span class="estado"
+                                          th:classappend="${matricula.estado.name() == 'ACTIVA'
+                                          ? 'estado-activo'
+                                          : (matricula.estado.name() == 'PENDIENTE'
+                                          ? 'estado-pendiente'
+                                          : '')}"
+                                          th:text="${matricula.estado.name()}">
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <a th:if="${matricula.estado.name() == 'PENDIENTE'}"
+                                       th:href="@{/matriculas/nueva/paso-1(
+                                       alumnoId=${matricula.alumno.id}
+                                       )}"
+                                       class="boton">
+                                        Completar
+                                    </a>
+
+                                    <span th:unless="${matricula.estado.name() == 'PENDIENTE'}">
+                                        —
+                                    </span>
+                                </td>
+
+                            </tr>
+
+                            <tr th:if="${#lists.isEmpty(matriculas)}">
+                                <td colspan="7">
+                                    No se encontraron matrículas con estos filtros.
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <p class="pie-tabla"
+                   th:text="|${#lists.size(matriculas)} registros encontrados|">
+                </p>
+
+            </div>
+
+        </section>
+
+    </body>
+</html>

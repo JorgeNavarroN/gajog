@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Asignar horario',
+      'nueva-matricula',
+      ~{::contenido}
+      )}">
+
+    <body>
+
+        <section th:fragment="contenido"
+                 class="registro"
+                 id="pantalla-horario"
+                 th:attr="data-dni=${registroMatricula.dni}">
+
+            <div class="etiqueta">NUEVA MATRÍCULA / PASO 2 DE 3</div>
+
+            <h1 class="titulo">Asignar grupo y horario</h1>
+
+            <p class="descripcion">
+                Selecciona el grupo y los horarios del alumno.
+            </p>
+
+            <div class="pasos">
+                <span>✓ Datos</span>
+                <span class="actual" aria-current="step">2. Horario</span>
+                <span>3. Pago</span>
+            </div>
+
+            <form class="panel"
+                  id="formulario-horario"
+                  method="get"
+                  th:action="@{/matriculas/nueva/paso-3}">
+
+                <div class="asignacion-grilla">
+
+                    <section>
+
+                        <h2>Grupos disponibles</h2>
+
+                        <p class="descripcion"
+                           th:text="|Categoría: ${categoriaAsignada.nombre}|">
+                        </p>
+
+                        <div id="opciones-horario"
+                             style="margin-top: 20px;">
+                            Cargando grupos…
+                        </div>
+
+                        <p id="error-horario"
+                           class="errores-formulario"
+                           role="alert"
+                           hidden>
+                        </p>
+
+                    </section>
+
+                    <aside class="resumen-matricula">
+
+                        <h2>Resumen del alumno</h2>
+
+                        <p>Nombre completo</p>
+
+                        <strong th:text="|${registroMatricula.nombres} ${registroMatricula.apellidos}|">
+                        </strong>
+
+                        <p>DNI</p>
+
+                        <strong th:text="${registroMatricula.dni}">
+                        </strong>
+
+                        <p>Categoría</p>
+
+                        <strong th:text="${categoriaAsignada.nombre}">
+                        </strong>
+
+                        <hr class="separador">
+
+                        <p>Grupo seleccionado</p>
+
+                        <strong id="nombre-grupo">
+                            Selecciona un grupo
+                        </strong>
+
+                        <ul id="horarios-seleccionados"
+                            class="horarios-grupo"
+                            style="margin-left: 0;">
+                        </ul>
+
+                    </aside>
+
+                </div>
+
+                <div class="acciones-formulario">
+
+                    <a th:href="@{/matriculas/nueva/paso-1}"
+                       class="boton">
+                        ← Anterior
+                    </a>
+
+                    <button type="submit"
+                            id="continuar-pago"
+                            class="boton boton-primario"
+                            disabled>
+                        Continuar a pago →
+                    </button>
+
+                </div>
+
+            </form>
+
+            <script>
+                (async () => {
+                const pantalla = document.getElementById(
+                "pantalla-horario"
+                );
+
+                const formulario = document.getElementById(
+                "formulario-horario"
+                );
+
+                const contenedor = document.getElementById(
+                "opciones-horario"
+                );
+
+                const boton = document.getElementById(
+                "continuar-pago"
+                );
+
+                const clave =
+                "gajog-captura-grupo-" + pantalla.dataset.dni;
+
+                function seleccionado() {
+                return contenedor.querySelector(
+                'input[name="grupoVisual"]:checked:not(:disabled)'
+                );
+                }
+
+                function actualizarResumen() {
+                const radio = seleccionado();
+
+                document.getElementById("nombre-grupo")
+                .textContent = radio
+                ? radio.closest("label").dataset.nombre
+                : "Selecciona un grupo";
+
+                const lista = document.getElementById(
+                "horarios-seleccionados"
+                );
+
+                lista.replaceChildren();
+
+                if (radio) {
+                radio.closest("label")
+                .querySelectorAll("[data-horario]")
+                .forEach(horario => {
+                const elemento =
+                document.createElement("li");
+
+                elemento.textContent =
+                horario.textContent.trim();
+
+                lista.append(elemento);
+                });
+                }
+
+                boton.disabled = !radio;
+                }
+
+                try {
+                // Esta ruta ya carga los grupos desde MySQL.
+                const respuesta = await fetch(
+                formulario.action,
+                { credentials: "same-origin" }
+                );
+
+                if (!respuesta.ok) {
+                throw new Error("No se pudieron consultar los grupos.");
+                }
+
+                const documento = new DOMParser().parseFromString(
+                await respuesta.text(),
+                "text/html"
+                );
+
+                const origen = documento.getElementById(
+                "grupos-para-captura"
+                );
+
+                if (!origen) {
+                throw new Error(
+                "No se encontraron los grupos. Comprueba que hayas reemplazado también paso-3.html."
+                );
+                }
+
+                contenedor.replaceChildren(
+                ...Array.from(origen.childNodes).map(nodo =>
+                document.importNode(nodo, true)
+                )
+                );
+
+                let anterior = null;
+
+                try {
+                anterior = JSON.parse(
+                sessionStorage.getItem(clave)
+                );
+                } catch {
+                // No hay una selección anterior válida.
+                }
+
+                contenedor.querySelectorAll(
+                'input[name="grupoVisual"]'
+                ).forEach(radio => {
+                if (
+                anterior &&
+                radio.value === String(anterior.id) &&
+                !radio.disabled
+                ) {
+                radio.checked = true;
+                }
+
+                radio.addEventListener(
+                "change",
+                actualizarResumen
+                );
+                });
+
+                actualizarResumen();
+
+                } catch (error) {
+                contenedor.textContent = "";
+
+                const mensaje = document.getElementById(
+                "error-horario"
+                );
+
+                mensaje.textContent = error.message;
+                mensaje.hidden = false;
+                }
+
+                formulario.addEventListener("submit", evento => {
+                evento.preventDefault();
+
+                const radio = seleccionado();
+
+                if (!radio) {
+                return;
+                }
+
+                sessionStorage.setItem(
+                clave,
+                JSON.stringify({
+                id: radio.value
+                })
+                );
+
+                window.location.assign(formulario.action);
+                });
+                })();
+            </script>
+
+        </section>
+
+    </body>
+</html>

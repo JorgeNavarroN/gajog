@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:fragment="pagina(titulo, seccion, contenido)">
+
+    <head>
+        <meta charset="UTF-8">
+
+        <meta name="viewport"
+              content="width=device-width, initial-scale=1">
+
+        <title th:text="${titulo} + ' | GAJOG TKD'">
+            GAJOG TKD
+        </title>
+
+        <style>
+            :root {
+                --fondo: #0c0f13;
+                --sidebar: #10151c;
+                --panel: #171e27;
+                --campo: #0e141c;
+                --borde: #293343;
+                --texto: #f4f7fc;
+                --secundario: #91a2b9;
+                --rojo: #f10c28;
+                --rojo-oscuro: #941326;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                background: var(--fondo);
+                color: var(--texto);
+                font-family: "Segoe UI", Arial, sans-serif;
+                font-size: 14px;
+            }
+
+            a {
+                color: inherit;
+                text-decoration: none;
+            }
+
+            button, input, select, textarea {
+                font: inherit;
+            }
+
+            a:focus-visible,
+            button:focus-visible,
+            input:focus-visible,
+            select:focus-visible {
+                outline: 2px solid #83baf9;
+                outline-offset: 3px;
+            }
+
+            .sidebar {
+                position: fixed;
+                inset: 0 auto 0 0;
+                width: 210px;
+                padding: 25px 14px;
+                background: var(--sidebar);
+                border-right: 1px solid var(--borde);
+            }
+
+            .marca {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 0 8px;
+                margin-bottom: 38px;
+            }
+
+            .marca-icono {
+                display: grid;
+                place-items: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 9px;
+                background: var(--rojo);
+                font-weight: 900;
+            }
+
+            .marca-nombre {
+                font-size: 18px;
+                font-weight: 800;
+            }
+
+            .marca-nombre span {
+                color: var(--rojo);
+            }
+
+            .marca-descripcion {
+                margin-top: 4px;
+                color: var(--secundario);
+                font-size: 7px;
+                letter-spacing: .6px;
+            }
+
+            .menu-titulo {
+                margin: 25px 12px 10px;
+                color: var(--secundario);
+                font-size: 9px;
+                font-weight: 700;
+                letter-spacing: 1.5px;
+            }
+
+            .menu-enlace {
+                display: block;
+                margin-bottom: 5px;
+                padding: 12px 14px;
+                border-radius: 8px;
+                color: #b1bfd3;
+                font-size: 12px;
+            }
+
+            .menu-enlace:hover {
+                background: #1d2734;
+                color: white;
+            }
+
+            .menu-enlace.activo {
+                background: var(--rojo-oscuro);
+                color: white;
+                font-weight: 700;
+            }
+
+            .principal {
+                min-height: 100vh;
+                margin-left: 210px;
+            }
+
+            .cabecera {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                height: 68px;
+                padding: 0 35px;
+                border-bottom: 1px solid var(--borde);
+                background: var(--sidebar);
+            }
+
+            .breadcrumb {
+                color: var(--secundario);
+                font-size: 11px;
+            }
+
+            .breadcrumb strong {
+                color: var(--texto);
+            }
+
+            .perfil {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: var(--secundario);
+                font-size: 11px;
+            }
+
+            .avatar {
+                display: grid;
+                place-items: center;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: var(--rojo-oscuro);
+                color: white;
+                font-weight: 700;
+            }
+
+            .contenido {
+                max-width: 1450px;
+                margin: auto;
+                padding: 35px;
+            }
+
+            .etiqueta {
+                margin-bottom: 12px;
+                color: #ff5067;
+                font-size: 10px;
+                font-weight: 800;
+                letter-spacing: 1.8px;
+            }
+
+            .titulo {
+                margin: 0 0 10px;
+                font-size: 32px;
+                letter-spacing: -.8px;
+            }
+
+            .descripcion {
+                margin: 0;
+                color: var(--secundario);
+                font-size: 12px;
+                line-height: 1.6;
+            }
+
+            .encabezado-pagina {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 20px;
+                margin-bottom: 28px;
+            }
+
+            .panel {
+                padding: 24px;
+                border: 1px solid var(--borde);
+                border-radius: 14px;
+                background: var(--panel);
+            }
+
+            .boton {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                min-height: 40px;
+                padding: 10px 16px;
+                border: 1px solid var(--borde);
+                border-radius: 8px;
+                background: #202a37;
+                color: white;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .boton:hover {
+                background: #2b3849;
+            }
+
+            .boton-primario {
+                border-color: var(--rojo);
+                background: var(--rojo);
+            }
+
+            .boton-primario:hover {
+                background: #cf0922;
+            }
+
+            .boton:disabled {
+                opacity: .45;
+                cursor: not-allowed;
+            }
+
+            .campo {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .campo label {
+                color: #c6d4e7;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            input, select, textarea {
+                width: 100%;
+                min-height: 42px;
+                padding: 10px 12px;
+                border: 1px solid #354153;
+                border-radius: 8px;
+                background: var(--campo);
+                color: var(--texto);
+                color-scheme: dark;
+            }
+
+            input:focus,
+            select:focus,
+            textarea:focus {
+                border-color: var(--rojo);
+            }
+
+            .grilla-dos {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 20px;
+            }
+
+            .acciones-formulario {
+                display: flex;
+                justify-content: space-between;
+                gap: 15px;
+                margin-top: 25px;
+                padding-top: 20px;
+                border-top: 1px solid var(--borde);
+            }
+
+            .barra-filtros {
+                display: grid;
+                grid-template-columns: 2fr 1fr 1fr auto;
+                gap: 12px;
+                margin: 20px 0;
+            }
+
+            .pestanas {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .pestana {
+                padding: 9px 14px;
+                border: 1px solid var(--borde);
+                border-radius: 7px;
+                background: transparent;
+                color: var(--secundario);
+                cursor: pointer;
+            }
+
+            .pestana.activa {
+                background: var(--rojo-oscuro);
+                border-color: var(--rojo-oscuro);
+                color: white;
+            }
+
+            .tabla-contenedor {
+                overflow-x: auto;
+                border: 1px solid var(--borde);
+                border-radius: 12px;
+            }
+
+            .tabla {
+                width: 100%;
+                min-width: 800px;
+                border-collapse: collapse;
+                text-align: left;
+            }
+
+            .tabla th {
+                padding: 15px;
+                background: #11171f;
+                color: var(--secundario);
+                font-size: 10px;
+                letter-spacing: .8px;
+                text-transform: uppercase;
+            }
+
+            .tabla td {
+                padding: 17px 15px;
+                border-top: 1px solid var(--borde);
+                font-size: 12px;
+            }
+
+            .tabla tbody tr:hover {
+                background: #1b2430;
+            }
+
+            .tabla small {
+                display: block;
+                margin-top: 5px;
+                color: var(--secundario);
+                font-size: 10px;
+            }
+
+            .estado {
+                display: inline-block;
+                padding: 6px 9px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 700;
+            }
+
+            .estado-activo {
+                background: #123b2c;
+                color: #4ce3a1;
+            }
+
+            .estado-pendiente {
+                background: #493824;
+                color: #f6c676;
+            }
+
+            .pie-tabla {
+                margin-top: 15px;
+                color: var(--secundario);
+                font-size: 11px;
+            }
+
+            .registro {
+                max-width: 850px;
+                margin: auto;
+            }
+
+            .pasos {
+                display: flex;
+                gap: 20px;
+                margin: 25px 0;
+                color: var(--secundario);
+                font-size: 12px;
+            }
+
+            .pasos .actual {
+                color: #ff5067;
+                font-weight: 700;
+            }
+
+            .caja-categoria {
+                margin: 20px 0;
+                padding: 15px;
+                border: 1px solid #30475e;
+                border-radius: 8px;
+                background: #14202f;
+                color: #a8d2ff;
+                line-height: 1.6;
+            }
+
+            .errores-formulario {
+                margin-bottom: 20px;
+                padding: 15px;
+                border: 1px solid #813343;
+                border-radius: 8px;
+                background: #351923;
+                color: #ffabb9;
+            }
+
+            .separador {
+                margin: 25px 0;
+                border: 0;
+                border-top: 1px solid var(--borde);
+            }
+
+            .resumen-datos {
+                margin: 0;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 22px;
+            }
+
+            .resumen-datos dt {
+                color: var(--secundario);
+                font-size: 11px;
+                margin-bottom: 7px;
+            }
+
+            .resumen-datos dd {
+                margin: 0;
+                font-weight: 600;
+                overflow-wrap: anywhere;
+            }
+
+            .asignacion-grilla {
+                display: grid;
+                grid-template-columns: 1.3fr 1fr;
+                gap: 25px;
+                align-items: start;
+            }
+
+            .opcion-grupo {
+                display: block;
+                padding: 18px;
+                margin-bottom: 14px;
+                border: 1px solid var(--borde);
+                border-radius: 10px;
+                background: var(--campo);
+                cursor: pointer;
+            }
+
+            .opcion-grupo:has(input:checked) {
+                border-color: var(--rojo);
+                background: #2b1c27;
+            }
+
+            .opcion-grupo:has(input:disabled) {
+                opacity: .5;
+                cursor: not-allowed;
+            }
+
+            .opcion-grupo-cabecera {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .opcion-grupo-cabecera strong {
+                flex: 1;
+            }
+
+            .opcion-grupo input[type="radio"] {
+                width: 16px;
+                min-height: auto;
+                margin: 0;
+                accent-color: var(--rojo);
+            }
+
+            .horarios-grupo {
+                margin: 14px 0 0 26px;
+                padding: 0;
+                list-style: none;
+                color: var(--secundario);
+                font-size: 12px;
+                line-height: 1.8;
+            }
+
+            .resumen-matricula {
+                padding: 20px;
+                border: 1px solid var(--borde);
+                border-radius: 10px;
+                background: var(--campo);
+            }
+
+            .resumen-matricula p {
+                color: var(--secundario);
+                font-size: 12px;
+                line-height: 1.7;
+            }
+
+            .apoderado-desplegable {
+                border: 1px solid var(--borde);
+                border-radius: 10px;
+                background: var(--campo);
+            }
+
+            .apoderado-desplegable summary {
+                padding: 16px 18px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            .apoderado-desplegable summary span:last-child {
+                float: right;
+                color: var(--secundario);
+                font-size: 11px;
+                font-weight: 400;
+            }
+
+            .apoderado-desplegable[open] summary {
+                border-bottom: 1px solid var(--borde);
+            }
+
+            .apoderado-contenido {
+                padding: 20px;
+            }
+
+            @media (max-width: 900px) {
+                .asignacion-grilla {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 900px) {
+                .barra-filtros {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+
+            @media (max-width: 500px) {
+                .barra-filtros {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 760px) {
+                .sidebar {
+                    position: static;
+                    width: 100%;
+                    border-right: none;
+                    border-bottom: 1px solid var(--borde);
+                }
+
+                .marca {
+                    margin-bottom: 20px;
+                }
+
+                .principal {
+                    margin-left: 0;
+                }
+
+                .cabecera {
+                    padding: 0 20px;
+                }
+
+                .contenido {
+                    padding: 25px 20px;
+                }
+
+                .encabezado-pagina {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
+
+                .grilla-dos {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <aside class="sidebar">
+
+            <div class="marca">
+                <div class="marca-icono">TK</div>
+
+                <div>
+                    <div class="marca-nombre">
+                        GAJOG <span>TKD</span>
+                    </div>
+
+                    <div class="marca-descripcion">
+                        SISTEMA DE GESTIÓN DE ACADEMIAS
+                    </div>
+                </div>
+            </div>
+
+            <nav aria-label="Navegación principal">
+
+                <div class="menu-titulo">GESTIÓN</div>
+
+                <a th:href="@{/matriculas}"
+                   class="menu-enlace"
+                   th:classappend="${seccion == 'matriculas' ? 'activo' : ''}">
+                    Matrículas
+                </a>
+
+                <a th:href="@{/horarios}"
+                   class="menu-enlace"
+                   th:classappend="${seccion == 'horarios' ? 'activo' : ''}">
+                    Horarios y grupos
+                </a>
+
+                <div class="menu-titulo">CLASES Y COBROS</div>
+
+                <a th:href="@{/mensualidades}"
+                   class="menu-enlace"
+                   th:classappend="${seccion == 'mensualidades' ? 'activo' : ''}">
+                    Mensualidades
+                </a>
+
+                <a th:href="@{/asistencias}"
+                   class="menu-enlace"
+                   th:classappend="${seccion == 'asistencias' ? 'activo' : ''}">
+                    Asistencia
+                </a>
+
+                <div class="menu-titulo">REGISTRO</div>
+
+                <a th:href="@{/matriculas/nueva/paso-1}"
+                   class="menu-enlace"
+                   th:classappend="${seccion == 'nueva-matricula' ? 'activo' : ''}">
+                    + Nueva matrícula
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <div class="principal">
+
+            <header class="cabecera">
+
+                <div class="breadcrumb">
+                    GAJOG TKD /
+                    <strong th:text="${titulo}">Pantalla</strong>
+                </div>
+
+                <div class="perfil">
+                    <span>Recepción</span>
+                    <div class="avatar">RP</div>
+                </div>
+
+            </header>
+
+            <main class="contenido"
+                  th:insert="${contenido}">
+            </main>
+
+        </div>
+
+    </body>
+</html>
