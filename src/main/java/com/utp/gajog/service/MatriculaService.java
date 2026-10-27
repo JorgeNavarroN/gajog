@@ -1,72 +1,102 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package com.utp.gajog.service;
 
-import com.utp.gajog.model.*;
-import com.utp.gajog.repository.*;
+import com.utp.gajog.enums.EstadoAlumno;
+import com.utp.gajog.enums.EstadoMatricula;
+import com.utp.gajog.model.Alumno;
+import com.utp.gajog.model.Categoria;
+import com.utp.gajog.model.Grupo;
+import com.utp.gajog.model.Matricula;
+import com.utp.gajog.repository.AlumnoRepository;
+import com.utp.gajog.repository.GrupoRepository;
+import com.utp.gajog.repository.MatriculaRepository;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.Period;
-import java.util.List;
-
+/**
+ *
+ * @author JORGE
+ */
 @Service
 public class MatriculaService {
 
-    private final MatriculaRepository matriculaRepository;
     private final AlumnoRepository alumnoRepository;
-    private final CategoriaRepository categoriaRepository;
-    private final HorarioRepository horarioRepository;
+    private final GrupoRepository grupoRepository;
+    private final MatriculaRepository matriculaRepository;
+    private final CategoriaService categoriaService;
 
     public MatriculaService(
-            MatriculaRepository matriculaRepository,
             AlumnoRepository alumnoRepository,
-            CategoriaRepository categoriaRepository,
-            HorarioRepository horarioRepository
-    ) {
-        this.matriculaRepository = matriculaRepository;
+            GrupoRepository grupoRepository,
+            MatriculaRepository matriculaRepository,
+            CategoriaService categoriaService) {
+
         this.alumnoRepository = alumnoRepository;
-        this.categoriaRepository = categoriaRepository;
-        this.horarioRepository = horarioRepository;
+        this.grupoRepository = grupoRepository;
+        this.matriculaRepository = matriculaRepository;
+        this.categoriaService = categoriaService;
     }
 
-    @Transactional
-    public Matricula registrarMatricula(Long alumnoId, Long categoriaId, Long horarioId) {
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Matricula registrar(Long alumnoId, Long grupoId) {
+
+        Grupo grupo = grupoRepository.findByIdConBloqueo(grupoId)
+                .orElseThrow(()
+                        -> new IllegalArgumentException("Grupo no encontrado."));
+
         Alumno alumno = alumnoRepository.findById(alumnoId)
-                .orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+                .orElseThrow(()
+                        -> new IllegalArgumentException("Alumno no encontrado."));
 
         if (alumno.getEstado() != EstadoAlumno.ACTIVO) {
-            throw new IllegalStateException("Solo se pueden matricular alumnos en estado ACTIVO");
+            throw new IllegalStateException(
+                    "El alumno debe estar activo para matricularse.");
         }
 
-        Categoria categoria = categoriaRepository.findById(categoriaId)
-                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
-
-        if (!Boolean.TRUE.equals(categoria.getActivo())) {
-            throw new IllegalStateException("La categoría seleccionada no está activa");
+        if (!Boolean.TRUE.equals(grupo.getActivo())) {
+            throw new IllegalStateException("El grupo no está activo.");
         }
 
-        Horario horario = horarioRepository.findById(horarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Horario no encontrado"));
-
-        if (!horario.getCategoria().getId().equals(categoria.getId())) {
-            throw new IllegalArgumentException("El horario seleccionado no pertenece a la categoría indicada");
+        if (grupo.getHorarios().isEmpty()) {
+            throw new IllegalStateException(
+                    "El grupo no tiene horarios asignados.");
         }
 
-        LocalDate fechaNacimiento = alumno.getPersona().getFechaNacimiento();
-        if (fechaNacimiento != null) {
-            int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
-            if (edad < categoria.getEdadMinima() || edad > categoria.getEdadMaxima()) {
-                throw new IllegalArgumentException(
-                        "La edad del alumno (" + edad + " años) no está en el rango de la categoría "
-                        + categoria.getNombre() + " (" + categoria.getEdadMinima() + " - " + categoria.getEdadMaxima() + " años)"
-                );
-            }
+        Categoria categoria = categoriaService
+                .determinarPorFechaNacimiento(
+                        alumno.getPersona().getFechaNacimiento());
+
+        if (!categoria.getId().equals(grupo.getCategoria().getId())) {
+            throw new IllegalArgumentException(
+                    "El grupo no corresponde a la categoría del alumno.");
+        }
+
+        boolean yaMatriculado = matriculaRepository
+                .existsByAlumno_IdAndGrupo_IdAndEstado(
+                        alumnoId, grupoId, EstadoMatricula.ACTIVA);
+
+        if (yaMatriculado) {
+            throw new IllegalStateException(
+                    "El alumno ya tiene una matrícula activa en este grupo.");
+        }
+
+        long ocupados = matriculaRepository.countByGrupo_IdAndEstado(
+                grupoId, EstadoMatricula.ACTIVA);
+
+        if (ocupados >= grupo.getCupoMaximo()) {
+            throw new IllegalStateException(
+                    "El grupo ya no tiene vacantes disponibles.");
         }
 
         Matricula matricula = new Matricula();
         matricula.setAlumno(alumno);
-        matricula.setCategoria(categoria);
-        matricula.setHorario(horario);
+        matricula.setGrupo(grupo);
         matricula.setFechaMatricula(LocalDate.now());
         matricula.setEstado(EstadoMatricula.ACTIVA);
 
@@ -74,15 +104,19 @@ public class MatriculaService {
     }
 
     @Transactional(readOnly = true)
-    public List<Matricula> listarPorAlumno(Long alumnoId) {
-        return matriculaRepository.findByAlumnoId(alumnoId);
-    }
+    public List<Matricula> listar(
+            String busqueda,
+            Long categoriaId,
+            Long grupoId,
+            EstadoMatricula estado) {
 
-    @Transactional
-    public Matricula cambiarEstado(Long matriculaId, EstadoMatricula nuevoEstado) {
-        Matricula matricula = matriculaRepository.findById(matriculaId)
-                .orElseThrow(() -> new IllegalArgumentException("Matrícula no encontrada"));
-        matricula.setEstado(nuevoEstado);
-        return matriculaRepository.save(matricula);
+        String texto = busqueda == null ? "" : busqueda.trim();
+
+        return matriculaRepository.buscarParaListado(
+                texto,
+                categoriaId,
+                grupoId,
+                estado
+        );
     }
 }
