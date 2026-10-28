@@ -36,13 +36,10 @@ public class Grupo {
     @Column(name = "cupo_maximo", nullable = false)
     private Integer cupoMaximo;
 
-<<<<<<< HEAD
-=======
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instructor_id", nullable = false)
     private Instructor instructor;
 
->>>>>>> origin/joaquin
     public Grupo() {
     }
 
@@ -94,8 +91,6 @@ public class Grupo {
         this.cupoMaximo = cupoMaximo;
     }
 
-<<<<<<< HEAD
-=======
     public Instructor getInstructor() {
         return instructor;
     }
@@ -104,5 +99,4 @@ public class Grupo {
         this.instructor = instructor;
     }
 
->>>>>>> origin/joaquin
 }
