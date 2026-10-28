@@ -4,34 +4,51 @@
  */
 package com.utp.gajog.controller;
 
+import com.utp.gajog.dto.PagoMensualidadForm;
 import com.utp.gajog.enums.EstadoMatricula;
+import com.utp.gajog.enums.MedioPago;
+import com.utp.gajog.model.Pago;
 import com.utp.gajog.repository.CategoriaRepository;
 import com.utp.gajog.repository.GrupoRepository;
 import com.utp.gajog.service.MatriculaService;
+import com.utp.gajog.service.MensualidadService;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  *
  * @author JORGE
  */
 @Controller
+//@RequestMapping("/mensualidades")
 public class MatriculaWebController {
 
     private final MatriculaService matriculaService;
     private final CategoriaRepository categoriaRepository;
     private final GrupoRepository grupoRepository;
+    private static final ZoneId ZONA = ZoneId.of("America/Lima");
+    private final MensualidadService mensualidadService;
 
     public MatriculaWebController(
             MatriculaService matriculaService,
             CategoriaRepository categoriaRepository,
-            GrupoRepository grupoRepository) {
+            GrupoRepository grupoRepository,
+            MensualidadService mensualidadService) {
 
         this.matriculaService = matriculaService;
         this.categoriaRepository = categoriaRepository;
         this.grupoRepository = grupoRepository;
+        this.mensualidadService = mensualidadService;
     }
 
     @GetMapping("/matriculas")
@@ -60,4 +77,5 @@ public class MatriculaWebController {
 
         return "matriculas";
     }
+
 }

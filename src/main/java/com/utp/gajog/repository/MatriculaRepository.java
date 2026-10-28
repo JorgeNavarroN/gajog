@@ -21,8 +21,10 @@ public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
     List<Matricula> findByAlumno_IdAndEstado(
             Long alumnoId, EstadoMatricula estado);
 
+    @EntityGraph(attributePaths = {"alumno.persona"})
     List<Matricula> findByGrupo_IdAndEstado(
-            Long grupoId, EstadoMatricula estado);
+            Long grupoId,
+            EstadoMatricula estado);
 
     long countByGrupo_IdAndEstado(
             Long grupoId, EstadoMatricula estado);

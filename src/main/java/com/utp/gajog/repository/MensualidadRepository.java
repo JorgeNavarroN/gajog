@@ -6,10 +6,15 @@ package com.utp.gajog.repository;
 
 import com.utp.gajog.enums.EstadoMensualidad;
 import com.utp.gajog.model.Mensualidad;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  *
@@ -25,4 +30,12 @@ public interface MensualidadRepository extends JpaRepository<Mensualidad, Long> 
 
     List<Mensualidad> findByEstadoAndFechaVencimientoBefore(
             EstadoMensualidad estado, LocalDate fecha);
+
+    @EntityGraph(attributePaths = {"alumno.persona"})
+    List<Mensualidad> findByAnioAndMesOrderByAlumno_Persona_ApellidosAsc(
+            Integer anio, Integer mes);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT m FROM Mensualidad m WHERE m.id = :id")
+    Optional<Mensualidad> findByIdConBloqueo(@Param("id") Long id);
 }

@@ -5,6 +5,8 @@
 package com.utp.gajog.repository;
 
 import com.utp.gajog.model.Instructor;
+import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -13,4 +15,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
+    @EntityGraph(attributePaths = {"persona"})
+    List<Instructor> findAllByOrderByPersona_ApellidosAsc();
 }

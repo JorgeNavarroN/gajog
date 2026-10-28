@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Asistencia', 'asistencias', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido" class="registro">
+
+            <p style="color: #91a2b9;">CLASES / ASISTENCIA</p>
+            <h1>Asistencia de clase</h1>
+
+            <p style="color: #91a2b9;">
+                Selecciona la clase para abrir su lista de alumnos.
+            </p>
+
+            <form class="panel"
+                  method="post"
+                  th:action="@{/asistencias/sesiones}"
+                  th:object="${sesionForm}">
+
+                <h2>Sesión de entrenamiento</h2>
+
+                <div class="errores-formulario"
+                     role="alert"
+                     th:if="${error != null}"
+                     th:text="${error}">
+                </div>
+
+                <div class="caja-categoria"
+                     style="margin-bottom: 20px;"
+                     th:if="${#lists.isEmpty(horarios)
+                     or #lists.isEmpty(instructores)}">
+                    Para abrir una sesión necesitas al menos
+                    un horario de un grupo activo y un instructor registrado.
+                </div>
+
+                <div class="campo" style="margin-bottom: 20px;">
+                    <label for="horarioId">Grupo y horario *</label>
+
+                    <select id="horarioId"
+                            th:field="*{horarioId}"
+                            required>
+
+                        <option value="">Seleccionar clase</option>
+
+                        <option th:each="horario : ${horarios}"
+                                th:value="${horario.id}"
+                                th:text="${horario.grupo.nombre
+                                + ' · ' + horario.grupo.categoria.nombre
+                                + ' · ' + horario.diaSemana
+                                + ' · '
+                                + #temporals.format(horario.horaInicio, 'HH:mm')
+                                + ' – '
+                                + #temporals.format(horario.horaFin, 'HH:mm')}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="grilla-dos">
+                    <div class="campo">
+                        <label for="instructorId">Instructor *</label>
+
+                        <select id="instructorId"
+                                th:field="*{instructorId}"
+                                required>
+
+                            <option value="">Seleccionar instructor</option>
+
+                            <option th:each="instructor : ${instructores}"
+                                    th:value="${instructor.id}"
+                                    th:text="${instructor.persona.apellidos
+                                    + ', ' + instructor.persona.nombres}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label for="fecha">Fecha de clase *</label>
+
+                        <input type="date"
+                               id="fecha"
+                               th:field="*{fecha}"
+                               required>
+                    </div>
+                </div>
+
+                <p class="caja-categoria" style="margin-top: 20px;">
+                    La fecha debe coincidir con el día del horario.
+                    Si la sesión ya existe, se abrirá su lista.
+                </p>
+
+                <div class="acciones-formulario" style="margin-top: 24px;">
+                    <span style="color: #91a2b9; font-size: 13px;">
+                        Las horas se toman del horario seleccionado.
+                    </span>
+
+                    <button type="submit"
+                            class="boton boton-primario"
+                            th:disabled="${#lists.isEmpty(horarios)
+                            or #lists.isEmpty(instructores)}">
+                        Abrir sesión →
+                    </button>
+                </div>
+            </form>
+
+        </section>
+    </body>
+</html>
