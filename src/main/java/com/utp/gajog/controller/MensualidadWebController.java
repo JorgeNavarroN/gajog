@@ -8,6 +8,7 @@ import com.utp.gajog.dto.PagoMensualidadForm;
 import com.utp.gajog.enums.EstadoMensualidad;
 import com.utp.gajog.enums.MedioPago;
 import com.utp.gajog.model.Mensualidad;
+import com.utp.gajog.model.Pago;
 import com.utp.gajog.service.MensualidadService;
 import java.time.LocalDate;
 import java.time.Month;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -170,5 +172,86 @@ public class MensualidadWebController {
         }
 
         return YearMonth.of(anioSeleccionado, mesSeleccionado);
+    }
+
+    @GetMapping("/pagos/{pagoId}/editar")
+    public String mostrarEdicion(
+            @PathVariable("pagoId") Long pagoId,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            Pago pago = mensualidadService.obtenerPagoMensualidad(pagoId);
+
+            PagoMensualidadForm formulario = new PagoMensualidadForm();
+            formulario.setMedioPago(pago.getMedioPago());
+            formulario.setFechaPago(pago.getFechaPago().toLocalDate());
+
+            model.addAttribute("pagoForm", formulario);
+            cargarEdicion(model, pago);
+
+            return "mensualidades/editar-pago";
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/mensualidades";
+        }
+    }
+
+    @PostMapping("/pagos/{pagoId}/editar")
+    public String guardarEdicion(
+            @PathVariable("pagoId") Long pagoId,
+            @ModelAttribute("pagoForm") PagoMensualidadForm formulario,
+            BindingResult resultado,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        Pago pago;
+
+        try {
+            pago = mensualidadService.obtenerPagoMensualidad(pagoId);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/mensualidades";
+        }
+
+        if (resultado.hasErrors()) {
+            model.addAttribute(
+                    "error",
+                    "Revisa la fecha y el medio de pago.");
+
+            cargarEdicion(model, pago);
+            return "mensualidades/editar-pago";
+        }
+
+        try {
+            mensualidadService.editarPago(
+                    pagoId,
+                    formulario.getMedioPago(),
+                    formulario.getFechaPago());
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            model.addAttribute("error", e.getMessage());
+            cargarEdicion(model, pago);
+
+            return "mensualidades/editar-pago";
+        }
+
+        redirectAttributes.addFlashAttribute(
+                "exito", "Pago actualizado correctamente.");
+
+        redirectAttributes.addAttribute(
+                "anio", pago.getMensualidad().getAnio());
+
+        redirectAttributes.addAttribute(
+                "mes", pago.getMensualidad().getMes());
+
+        return "redirect:/mensualidades";
+    }
+
+    private void cargarEdicion(Model model, Pago pago) {
+        model.addAttribute("pago", pago);
+        model.addAttribute("mediosPago", MedioPago.values());
+        model.addAttribute("fechaActual", LocalDate.now(ZONA));
     }
 }
