@@ -4,6 +4,9 @@
  */
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.EstadoPago;
+import com.utp.gajog.enums.TipoPago;
+import com.utp.gajog.enums.MedioPago;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

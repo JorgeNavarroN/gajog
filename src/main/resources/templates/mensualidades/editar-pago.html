@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Editar pago', 'mensualidades', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido" class="registro">
+
+            <p style="color: #91a2b9;">ADMINISTRACIÓN / MENSUALIDADES</p>
+            <h1>Editar pago</h1>
+
+            <p style="color: #91a2b9;">
+                Corrige la fecha o el medio del pago registrado.
+            </p>
+
+            <form class="panel"
+                  method="post"
+                  th:action="@{/mensualidades/pagos/{id}/editar(id=${pago.id})}"
+                  th:object="${pagoForm}">
+
+                <div class="errores-formulario"
+                     role="alert"
+                     th:if="${error != null}"
+                     th:text="${error}">
+                </div>
+
+                <div class="caja-categoria" style="margin-bottom: 24px;">
+                    <strong th:text="${pago.alumno.persona.apellidos
+                            + ', ' + pago.alumno.persona.nombres}">
+                    </strong>
+
+                    <p>
+                        Período:
+                        <span th:text="${pago.mensualidad.mes
+                              + '/' + pago.mensualidad.anio}">
+                        </span>
+                    </p>
+
+                    <span>
+                        Importe:
+                        <strong th:text="${'S/ '
+                                + #numbers.formatDecimal(pago.monto, 1, 2)}">
+                        </strong>
+                    </span>
+                </div>
+
+                <div class="grilla-dos">
+                    <div class="campo">
+                        <label for="medioPago">Medio de pago *</label>
+
+                        <select id="medioPago"
+                                th:field="*{medioPago}"
+                                required>
+                            <option value="">Seleccionar medio</option>
+
+                            <option th:each="medio : ${mediosPago}"
+                                    th:value="${medio}"
+                                    th:text="${medio}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label for="fechaPago">Fecha de pago *</label>
+
+                        <input type="date"
+                               id="fechaPago"
+                               th:field="*{fechaPago}"
+                               th:max="${fechaActual}"
+                               required>
+                    </div>
+                </div>
+
+                <div class="acciones-formulario"
+                     style="margin-top: 24px;">
+
+                    <a class="boton"
+                       th:href="@{/mensualidades(
+                       anio=${pago.mensualidad.anio},
+                       mes=${pago.mensualidad.mes})}">
+                        Cancelar
+                    </a>
+
+                    <button type="submit" class="boton boton-primario">
+                        Guardar cambios
+                    </button>
+                </div>
+            </form>
+
+        </section>
+    </body>
+</html>

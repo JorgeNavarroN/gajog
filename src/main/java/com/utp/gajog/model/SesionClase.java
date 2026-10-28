@@ -4,6 +4,7 @@
  */
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.EstadoSesionClase;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;

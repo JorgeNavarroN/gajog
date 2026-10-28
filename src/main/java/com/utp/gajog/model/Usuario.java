@@ -1,5 +1,6 @@
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.RolUsuario;
 import jakarta.persistence.*;
 
 @Entity

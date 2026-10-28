@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Asistencia', 'asistencias', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido" class="asistencia-app">
+
+            <style>
+                /* La página ocupa el espacio disponible bajo la barra superior. */
+                html:has(.asistencia-app),
+                body:has(.asistencia-app) {
+                    height: 100%;
+                    overflow: hidden;
+                }
+
+                .contenido:has(.asistencia-app) {
+                    box-sizing: border-box;
+                    height: calc(100dvh - 76px);
+                    min-height: 0;
+                    overflow: hidden;
+                    padding: 24px 32px;
+                }
+
+                .asistencia-app {
+                    height: 100%;
+                    min-height: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+
+                .asistencia-app * {
+                    box-sizing: border-box;
+                }
+
+                .asistencia-titulo p {
+                    margin: 0 0 6px;
+                    color: #91a2b9;
+                    font-size: 13px;
+                }
+
+                .asistencia-titulo .etiqueta {
+                    color: #f10c28;
+                    font-size: 10px;
+                    font-weight: 800;
+                    letter-spacing: 2px;
+                }
+
+                .asistencia-titulo h1 {
+                    margin: 0 0 8px;
+                    font-size: 30px;
+                }
+
+                .asistencia-columnas {
+                    flex: 1;
+                    min-height: 0;
+                    display: grid;
+                    grid-template-columns: minmax(0, 1.5fr) minmax(240px, 1fr);
+                    gap: 16px;
+                }
+
+                .asistencia-panel {
+                    min-height: 0;
+                    min-width: 0;
+                    padding: 20px;
+                    background: #171e27;
+                    border: 1px solid #293343;
+                    border-radius: 14px;
+                }
+
+                .asistencia-principal {
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+
+                .asistencia-app h2 {
+                    margin: 0 0 16px;
+                    font-size: 17px;
+                }
+
+                .asistencia-filtros {
+                    display: grid;
+                    grid-template-columns: minmax(0, 1.5fr) minmax(140px, 1fr) auto;
+                    gap: 12px;
+                    align-items: end;
+                }
+
+                .asistencia-app label {
+                    display: block;
+                    margin-bottom: 6px;
+                    color: #bac9db;
+                    font-size: 12px;
+                }
+
+                .asistencia-app select,
+                .asistencia-app input[type="date"] {
+                    width: 100%;
+                    min-width: 0;
+                    height: 40px;
+                    padding: 8px 10px;
+                    color: #f4f7fc;
+                    background: #0e141c;
+                    border: 1px solid #344154;
+                    border-radius: 7px;
+                }
+
+                .asistencia-app .boton {
+                    min-height: 40px;
+                    justify-content: center;
+                }
+
+                .asistencia-info {
+                    margin: 12px 0;
+                    color: #91a2b9;
+                    font-size: 12px;
+                    line-height: 1.6;
+                }
+
+                .asistencia-lista-form {
+                    flex: 1;
+                    min-height: 0;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .asistencia-lista-titulo {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 16px 0 10px;
+                }
+
+                .asistencia-lista-titulo h2 {
+                    margin: 0;
+                }
+
+                .asistencia-contador {
+                    padding: 4px 9px;
+                    color: #63e6a0;
+                    background: #103e2c;
+                    border-radius: 20px;
+                    font-size: 11px;
+                }
+
+                /* Solo esta parte se desplaza. */
+                .asistencia-alumnos {
+                    flex: 1;
+                    min-height: 0;
+                    overflow-y: auto;
+                    overscroll-behavior: contain;
+                    scrollbar-gutter: stable;
+                }
+
+                .asistencia-alumno {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding: 16px 4px;
+                    border-bottom: 1px solid #293343;
+                }
+
+                .asistencia-alumno strong {
+                    font-size: 13px;
+                }
+
+                .asistencia-marcas {
+                    display: flex;
+                    flex-shrink: 0;
+                    gap: 6px;
+                    border: 0;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .asistencia-marcas label {
+                    position: relative;
+                    margin: 0;
+                    cursor: pointer;
+                }
+
+                .asistencia-marcas input {
+                    position: absolute;
+                    width: 1px;
+                    height: 1px;
+                    opacity: 0;
+                }
+
+                .asistencia-marcas span {
+                    display: block;
+                    padding: 8px 10px;
+                    color: #91a2b9;
+                    background: #0e141c;
+                    border: 1px solid #344154;
+                    border-radius: 6px;
+                    font-size: 12px;
+                }
+
+                .asistencia-marcas input:checked + .presente {
+                    color: #63e6a0;
+                    background: #103e2c;
+                    border-color: #16834b;
+                }
+
+                .asistencia-marcas input:checked + .ausente {
+                    color: #ff8b99;
+                    background: #421b26;
+                    border-color: #bf2941;
+                }
+
+                .asistencia-marcas input:focus-visible + span {
+                    outline: 2px solid #91caff;
+                    outline-offset: 2px;
+                }
+
+                .asistencia-guardar {
+                    flex-shrink: 0;
+                    width: 100%;
+                    margin-top: 16px;
+                }
+
+                .asistencia-lateral {
+                    overflow-y: auto;
+                }
+
+                .asistencia-dato {
+                    padding: 14px 0;
+                    border-bottom: 1px solid #293343;
+                }
+
+                .asistencia-dato small {
+                    display: block;
+                    margin-bottom: 6px;
+                    color: #91a2b9;
+                }
+
+                .asistencia-vacio {
+                    color: #91a2b9;
+                    font-size: 13px;
+                    line-height: 1.7;
+                }
+
+                .asistencia-app .errores-formulario,
+                .asistencia-app .caja-categoria {
+                    margin: 0;
+                    padding: 10px 14px;
+                }
+
+                .solo-lector {
+                    position: absolute;
+                    width: 1px;
+                    height: 1px;
+                    overflow: hidden;
+                    clip-path: inset(50%);
+                }
+
+                @media (max-width: 900px) {
+                    .contenido:has(.asistencia-app) {
+                        padding: 16px;
+                    }
+
+                    .asistencia-columnas {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .asistencia-lateral {
+                        display: none;
+                    }
+                }
+
+                @media (max-width: 600px) {
+                    .asistencia-filtros {
+                        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                    }
+
+                    .asistencia-filtros > div:first-child {
+                        grid-column: 1 / -1;
+                    }
+
+                    .asistencia-alumno {
+                        align-items: flex-start;
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+                }
+            </style>
+
+            <header class="asistencia-titulo">
+                <p class="etiqueta">INSTRUCTOR / ENTRENAMIENTO</p>
+                <h1>Asistencia de clase</h1>
+                <p>Selecciona la clase y registra la asistencia de sus alumnos.</p>
+            </header>
+
+            <div class="errores-formulario"
+                 role="alert"
+                 th:if="${error != null}"
+                 th:text="${error}">
+            </div>
+
+            <div class="caja-categoria"
+                 role="status"
+                 th:if="${exito != null}"
+                 th:text="${exito}">
+            </div>
+
+            <div class="asistencia-columnas">
+
+                <section class="asistencia-panel asistencia-principal">
+                    <h2>Sesión de entrenamiento</h2>
+
+                    <!-- Consultar otra clase no crea una sesión. -->
+                    <form method="get"
+                          th:action="@{/asistencias}"
+                          class="asistencia-filtros">
+
+                        <div>
+                            <label for="selector-horario">Grupo y horario</label>
+                            <select id="selector-horario"
+                                    name="horarioId"
+                                    required>
+                                <option value="">Seleccionar clase</option>
+
+                                <option th:each="h : ${horarios}"
+                                        th:value="${h.id}"
+                                        th:selected="${h.id == sesionForm.horarioId}"
+                                        th:text="${h.grupo.nombre
+                                        + ' · ' + h.diaSemana
+                                        + ' · '
+                                        + #temporals.format(h.horaInicio, 'HH:mm')
+                                        + '–'
+                                        + #temporals.format(h.horaFin, 'HH:mm')}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="selector-fecha">Fecha de clase</label>
+                            <input type="date"
+                                   id="selector-fecha"
+                                   name="fecha"
+                                   th:value="${sesionForm.fecha}"
+                                   required>
+                        </div>
+
+                        <button class="boton" type="submit">
+                            Cargar
+                        </button>
+                    </form>
+
+                    <!-- Si no hay sesión, permite crearla con instructor. -->
+                    <div th:if="${sesion == null}">
+                        <p class="asistencia-info">
+                            Si hay una clase en curso, su horario se selecciona
+                            automáticamente. Puedes elegir otro y pulsar Cargar.
+                        </p>
+
+                        <form method="post"
+                              th:action="@{/asistencias/sesiones}"
+                              th:object="${sesionForm}">
+
+                            <input type="hidden" th:field="*{horarioId}">
+                            <input type="hidden" th:field="*{fecha}">
+
+                            <p class="asistencia-info">
+                                El instructor se asigna automáticamente desde el grupo.
+                            </p>
+
+                            <button type="submit"
+                                    class="boton boton-primario asistencia-guardar"
+                                    th:disabled="${sesionForm.horarioId == null}">
+                                Abrir lista de alumnos
+                            </button>
+                        </form>
+
+                        <p class="asistencia-info">
+                            Para cambiar el horario o la fecha, pulsa primero Cargar.
+                        </p>
+                    </div>
+
+                    <form th:if="${sesion != null}"
+                          class="asistencia-lista-form"
+                          method="post"
+                          th:action="@{/asistencias/sesiones/{id}(id=${sesion.id})}"
+                          th:object="${asistenciaForm}">
+
+                        <div class="asistencia-lista-titulo">
+                            <h2>Lista de alumnos</h2>
+
+                            <span class="asistencia-contador"
+                                  th:text="${#lists.size(asistenciaForm.detalles)
+                                  + ' alumnos'}">
+                            </span>
+                        </div>
+
+                        <div class="asistencia-alumnos">
+                            <p class="asistencia-vacio"
+                               th:if="${#lists.isEmpty(asistenciaForm.detalles)}">
+                                No hay alumnos habilitados para esta sesión.
+                            </p>
+
+                            <div class="asistencia-alumno"
+                                 th:each="detalle, fila : *{detalles}">
+
+                                <input type="hidden"
+                                       th:field="*{detalles[__${fila.index}__].alumnoId}">
+
+                                <div>
+                                    <strong th:text="${detalle.nombreAlumno}"></strong>
+
+                                    <small style="display: block; margin-top: 5px; color: #91a2b9;"
+                                           th:text="${'DNI: ' + detalle.dniAlumno}">
+                                    </small>
+                                </div>
+
+                                <fieldset class="asistencia-marcas">
+                                    <legend class="solo-lector"
+                                            th:text="${'Asistencia de '
+                                            + detalle.nombreAlumno}">
+                                    </legend>
+
+                                    <label>
+                                        <input type="radio"
+                                               th:field="*{detalles[__${fila.index}__].estado}"
+                                               value="ASISTIO"
+                                               required>
+                                        <span class="presente">Presente</span>
+                                    </label>
+
+                                    <label>
+                                        <input type="radio"
+                                               th:field="*{detalles[__${fila.index}__].estado}"
+                                               value="NO_ASISTIO"
+                                               required>
+                                        <span class="ausente">Ausente</span>
+                                    </label>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                                class="boton boton-primario asistencia-guardar"
+                                th:disabled="${#lists.isEmpty(asistenciaForm.detalles)}">
+                            Guardar asistencia →
+                        </button>
+                    </form>
+                </section>
+
+                <aside class="asistencia-panel asistencia-lateral">
+                    <h2>Datos de la clase</h2>
+
+                    <p class="asistencia-vacio" th:if="${sesion == null}">
+                        Abre una sesión para consultar su información
+                        y marcar la asistencia.
+                    </p>
+
+                    <div th:if="${sesion != null}">
+                        <div class="asistencia-dato">
+                            <small>Grupo</small>
+                            <strong th:text="${sesion.horario.grupo.nombre}"></strong>
+                        </div>
+
+                        <div class="asistencia-dato">
+                            <small>Categoría</small>
+                            <strong th:text="${sesion.horario.grupo.categoria.nombre}">
+                            </strong>
+                        </div>
+
+                        <div class="asistencia-dato">
+                            <small>Instructor</small>
+                            <strong th:text="${sesion.instructor.persona.nombres
+                                    + ' ' + sesion.instructor.persona.apellidos}">
+                            </strong>
+                        </div>
+
+                        <div class="asistencia-dato">
+                            <small>Horario de la sesión</small>
+                            <strong th:text="${#temporals.format(
+                                    sesion.horaInicio, 'HH:mm')
+                                    + ' – '
+                                    + #temporals.format(sesion.horaFin, 'HH:mm')}">
+                            </strong>
+                        </div>
+
+                        <div class="asistencia-dato">
+                            <small>Estado</small>
+                            <strong th:text="${sesion.estado}"></strong>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </body>
+</html>

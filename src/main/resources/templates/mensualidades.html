@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Mensualidades', 'mensualidades', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .mensualidades-cabecera,
+                .mensualidades-filtros,
+                .mensualidades-acciones {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    flex-wrap: wrap;
+                }
+
+                .mensualidades-cabecera {
+                    justify-content: space-between;
+                    margin-bottom: 24px;
+                }
+
+                .mensualidades-filtros {
+                    align-items: end;
+                    margin-bottom: 24px;
+                }
+
+                .mensualidades-filtros .campo {
+                    flex: 1;
+                    min-width: 150px;
+                }
+
+                .mensualidades-resumen {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 16px;
+                    margin-bottom: 24px;
+                }
+
+                .mensualidades-resumen strong {
+                    display: block;
+                    font-size: 28px;
+                    margin-top: 8px;
+                }
+
+                .mensualidades-tabla {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                .mensualidades-tabla th,
+                .mensualidades-tabla td {
+                    padding: 14px 12px;
+                    text-align: left;
+                    border-bottom: 1px solid #293343;
+                }
+
+                .mensualidades-tabla th,
+                .mensualidades-secundario {
+                    color: #91a2b9;
+                    font-size: 13px;
+                }
+
+                .mensualidades-scroll {
+                    overflow-x: auto;
+                }
+
+                .mensualidades-bloque {
+                    margin-bottom: 24px;
+                }
+
+                .mensualidades-vacio {
+                    color: #91a2b9;
+                    padding: 20px 0;
+                }
+
+                .mensualidades-acciones {
+                    justify-content: flex-end;
+                    margin-top: 24px;
+                }
+
+                #formulario-nuevo-pago[hidden] {
+                    display: none;
+                }
+
+                .mensualidades-cabecera {
+                    margin-bottom: 16px;
+                }
+
+                .mensualidades-cabecera h1 {
+                    margin: 4px 0 8px;
+                }
+
+                .mensualidades-cabecera p {
+                    margin: 0;
+                }
+
+                .mensualidades-filtros {
+                    padding: 16px;
+                    gap: 12px;
+                    margin-bottom: 16px;
+                }
+
+                .mensualidades-filtros .campo {
+                    flex: initial;
+                    min-width: 0;
+                    width: 180px;
+                }
+
+                .mensualidades-resumen {
+                    gap: 12px;
+                    margin-bottom: 16px;
+                }
+
+                .mensualidades-resumen .panel {
+                    padding: 16px 20px;
+                }
+
+                .mensualidades-resumen strong {
+                    font-size: 24px;
+                    margin-top: 4px;
+                }
+
+                .mensualidades-bloque {
+                    padding: 20px;
+                    margin-bottom: 16px;
+                }
+
+                .mensualidades-bloque h2 {
+                    margin: 0 0 12px;
+                    font-size: 18px;
+                }
+
+                .mensualidades-tabla th,
+                .mensualidades-tabla td {
+                    padding: 10px 12px;
+                }
+
+                .mensualidades-tabla tbody tr:last-child td {
+                    border-bottom: none;
+                }
+
+                .mensualidades-vacio {
+                    padding: 8px 0;
+                    margin: 0;
+                }
+
+                /* Formulario en ventana modal */
+                dialog#formulario-nuevo-pago {
+                    width: min(620px, calc(100% - 32px));
+                    max-height: calc(100dvh - 40px);
+                    box-sizing: border-box;
+                    margin: auto;
+                    padding: 24px;
+                    overflow-y: auto;
+                    color: #f4f7fc;
+                    background: #171e27;
+                    border: 1px solid #293343;
+                    border-radius: 16px;
+                    box-shadow: 0 24px 80px #0008;
+                }
+
+                dialog#formulario-nuevo-pago:not([open]) {
+                    display: none;
+                }
+
+                dialog#formulario-nuevo-pago::backdrop {
+                    background: rgb(0 0 0 / 65%);
+                }
+
+                #formulario-nuevo-pago h2 {
+                    margin: 0 0 8px;
+                }
+
+                #formulario-nuevo-pago form > .campo {
+                    margin: 20px 0 16px;
+                }
+
+                #formulario-nuevo-pago .grilla-dos {
+                    gap: 16px;
+                }
+
+                .mensualidades-acciones {
+                    padding-top: 20px;
+                    margin-top: 20px;
+                    border-top: 1px solid #293343;
+                }
+
+                body.modal-pago-abierto {
+                    overflow: hidden;
+                }
+
+                @media (max-width: 600px) {
+                    .mensualidades-filtros .campo {
+                        flex: 1;
+                        width: auto;
+                        min-width: 110px;
+                    }
+
+                    .mensualidades-resumen {
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                    }
+
+                    #formulario-nuevo-pago .grilla-dos {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
+
+            <header class="mensualidades-cabecera">
+                <div>
+                    <p class="mensualidades-secundario">ADMINISTRACIÓN / COBROS</p>
+                    <h1>Mensualidades</h1>
+                    <p class="mensualidades-secundario">
+                        Consulta las cuotas del período y registra los pagos recibidos.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="boton boton-primario"
+                        id="abrir-nuevo-pago"
+                        aria-controls="formulario-nuevo-pago"
+                        th:attr="aria-expanded=${mostrarFormulario}"
+                        th:disabled="${#lists.isEmpty(pendientes)}">
+                    + Nuevo pago
+                </button>
+            </header>
+
+            <div class="caja-categoria mensualidades-bloque"
+                 role="status"
+                 th:if="${exito != null}"
+                 th:text="${exito}">
+            </div>
+
+            <div class="errores-formulario mensualidades-bloque"
+                 role="alert"
+                 th:if="${error != null and !mostrarFormulario}"
+                 th:text="${error}">
+            </div>
+
+            <form method="get"
+                  th:action="@{/mensualidades}"
+                  class="panel mensualidades-filtros">
+
+                <div class="campo">
+                    <label for="mes">Mes</label>
+                    <select id="mes" name="mes">
+                        <option th:each="opcion : ${meses}"
+                                th:value="${opcion.value}"
+                                th:selected="${opcion.value == mes}"
+                                th:text="${opcion.getDisplayName(
+                                T(java.time.format.TextStyle).FULL,
+                                T(java.util.Locale).forLanguageTag('es-PE'))}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="anio">Año</label>
+                    <input type="number"
+                           id="anio"
+                           name="anio"
+                           min="1900"
+                           max="9999"
+                           required
+                           th:value="${anio}">
+                </div>
+
+                <button type="submit" class="boton boton-primario">
+                    Consultar
+                </button>
+            </form>
+
+            <div class="mensualidades-resumen">
+                <div class="panel">
+                    <span class="mensualidades-secundario">Cuotas pagadas</span>
+                    <strong th:text="${totalPagadas}">0</strong>
+                </div>
+
+                <div class="panel">
+                    <span class="mensualidades-secundario">Cuotas pendientes</span>
+                    <strong th:text="${totalPendientes}">0</strong>
+                </div>
+            </div>
+
+            <dialog id="formulario-nuevo-pago"
+                    aria-labelledby="titulo-nuevo-pago"
+                    th:attr="data-abrir=${mostrarFormulario}">
+
+                <h2 id="titulo-nuevo-pago">Registrar pago recibido</h2>
+
+                <p class="mensualidades-secundario">
+                    Selecciona una cuota pendiente. Por ahora se reciben pagos completos.
+                </p>
+
+                <div class="errores-formulario"
+                     role="alert"
+                     th:if="${error != null}"
+                     th:text="${error}">
+                </div>
+
+                <form method="post"
+                      th:action="@{/mensualidades/pagos}"
+                      th:object="${pagoForm}">
+
+                    <input type="hidden" name="anio" th:value="${anio}">
+                    <input type="hidden" name="mes" th:value="${mes}">
+
+                    <div class="campo">
+                        <label for="mensualidadId">Alumno y cuota *</label>
+
+                        <select id="mensualidadId"
+                                th:field="*{mensualidadId}"
+                                required>
+                            <option value="">Seleccionar cuota pendiente</option>
+
+                            <option th:each="cuota : ${pendientes}"
+                                    th:value="${cuota.id}"
+                                    th:attr="data-monto=${cuota.monto}"
+                                    th:text="${cuota.alumno.persona.apellidos
+                                    + ', ' + cuota.alumno.persona.nombres
+                                    + ' · DNI ' + cuota.alumno.persona.dni
+                                    + ' · S/ ' + cuota.monto}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="grilla-dos">
+                        <div class="campo">
+                            <label for="monto">Monto recibido (S/) *</label>
+                            <input type="number"
+                                   id="monto"
+                                   th:field="*{monto}"
+                                   min="0.01"
+                                   max="99999999.99"
+                                   step="0.01"
+                                   readonly
+                                   required>
+                        </div>
+
+                        <div class="campo">
+                            <label for="medioPago">Medio de pago *</label>
+                            <select id="medioPago"
+                                    th:field="*{medioPago}"
+                                    required>
+                                <option value="">Seleccionar medio</option>
+                                <option th:each="medio : ${mediosPago}"
+                                        th:value="${medio}"
+                                        th:text="${medio}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="fechaPago">Fecha de pago *</label>
+                            <input type="date"
+                                   id="fechaPago"
+                                   th:field="*{fechaPago}"
+                                   th:max="${fechaActual}"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="mensualidades-acciones">
+                        <button type="button"
+                                class="boton"
+                                id="cerrar-nuevo-pago">
+                            Cancelar
+                        </button>
+
+                        <button type="submit"
+                                class="boton boton-primario"
+                                th:disabled="${#lists.isEmpty(pendientes)}">
+                            Registrar pago
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+
+            <section class="panel mensualidades-bloque">
+                <h2>Pagos registrados</h2>
+
+                <p class="mensualidades-vacio"
+                   th:if="${#lists.isEmpty(pagos)}">
+                    No hay pagos registrados para el período seleccionado.
+                </p>
+
+                <div class="mensualidades-scroll"
+                     th:unless="${#lists.isEmpty(pagos)}">
+
+                    <table class="mensualidades-tabla">
+                        <thead>
+                            <tr>
+                                <th>Alumno</th>
+                                <th>DNI</th>
+                                <th>Monto</th>
+                                <th>Fecha de pago</th>
+                                <th>Medio</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr th:each="pago : ${pagos}">
+                                <td th:text="${pago.alumno.persona.apellidos
+                                    + ', ' + pago.alumno.persona.nombres}">
+                                </td>
+                                <td th:text="${pago.alumno.persona.dni}"></td>
+                                <td th:text="${'S/ '
+                                    + #numbers.formatDecimal(pago.monto, 1, 2)}">
+                                </td>
+                                <td th:text="${#temporals.format(
+                                    pago.fechaPago, 'dd/MM/yyyy')}">
+                                </td>
+                                <td th:text="${pago.medioPago}"></td>
+                                <td>
+                                    <a class="boton"
+                                       th:href="@{/mensualidades/pagos/{id}/editar(id=${pago.id})}">
+                                        Editar
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel mensualidades-bloque">
+                <h2>Mensualidades pendientes</h2>
+
+                <p class="mensualidades-vacio"
+                   th:if="${#lists.isEmpty(pendientes)}">
+                    No hay cuotas pendientes registradas para este período.
+                </p>
+
+                <div class="mensualidades-scroll"
+                     th:unless="${#lists.isEmpty(pendientes)}">
+
+                    <table class="mensualidades-tabla">
+                        <thead>
+                            <tr>
+                                <th>Alumno</th>
+                                <th>DNI</th>
+                                <th>Importe</th>
+                                <th>Vencimiento</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr th:each="cuota : ${pendientes}">
+                                <td th:text="${cuota.alumno.persona.apellidos
+                                    + ', ' + cuota.alumno.persona.nombres}">
+                                </td>
+                                <td th:text="${cuota.alumno.persona.dni}"></td>
+                                <td th:text="${'S/ '
+                                    + #numbers.formatDecimal(cuota.monto, 1, 2)}">
+                                </td>
+                                <td th:text="${#temporals.format(
+                                    cuota.fechaVencimiento, 'dd/MM/yyyy')}">
+                                </td>
+                                <td th:text="${cuota.estado}"></td>
+                                <td>
+                                    <button type="button"
+                                            class="boton"
+                                            data-registrar-cuota
+                                            th:attr="data-cuota-id=${cuota.id}">
+                                        Registrar pago
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <script>
+                (() => {
+                const modal = document.getElementById("formulario-nuevo-pago");
+                const abrir = document.getElementById("abrir-nuevo-pago");
+                const cerrar = document.getElementById("cerrar-nuevo-pago");
+                const cuota = document.getElementById("mensualidadId");
+                const monto = document.getElementById("monto");
+
+                function actualizarMonto() {
+                const seleccionada = cuota.selectedOptions[0];
+                monto.value = seleccionada?.dataset.monto ?? "";
+                }
+
+                function mostrarFormulario() {
+                if (!modal.open) {
+                modal.showModal();
+                }
+
+                document.body.classList.add("modal-pago-abierto");
+                abrir.setAttribute("aria-expanded", "true");
+                cuota.focus();
+                }
+
+                abrir.addEventListener("click", mostrarFormulario);
+
+                cerrar.addEventListener("click", () => {
+                modal.close();
+                });
+
+                modal.addEventListener("close", () => {
+                document.body.classList.remove("modal-pago-abierto");
+                abrir.setAttribute("aria-expanded", "false");
+                });
+
+                cuota.addEventListener("change", actualizarMonto);
+
+                document.querySelectorAll("[data-registrar-cuota]")
+                .forEach(boton => {
+                boton.addEventListener("click", () => {
+                cuota.value = boton.dataset.cuotaId;
+                actualizarMonto();
+                mostrarFormulario();
+                });
+                });
+
+                actualizarMonto();
+
+                if (modal.dataset.abrir === "true") {
+                mostrarFormulario();
+                }
+                })();
+            </script>
+
+        </section>
+    </body>
+</html>

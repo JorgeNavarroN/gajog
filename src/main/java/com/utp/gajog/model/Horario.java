@@ -4,9 +4,9 @@
  */
 package com.utp.gajog.model;
 
+import com.utp.gajog.enums.DiaSemana;
 import jakarta.persistence.*;
 import java.time.LocalTime;
-
 
 @Entity
 @Table(name = "horarios")
@@ -17,8 +17,8 @@ public class Horario {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private Categoria categoria;
+    @JoinColumn(name = "grupo_id", nullable = false)
+    private Grupo grupo;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "dia_semana", nullable = false, length = 15)
@@ -39,14 +39,6 @@ public class Horario {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
     }
 
     public DiaSemana getDiaSemana() {
@@ -71,5 +63,13 @@ public class Horario {
 
     public void setHoraFin(LocalTime horaFin) {
         this.horaFin = horaFin;
+    }
+
+    public Grupo getGrupo() {
+        return grupo;
+    }
+
+    public void setGrupo(Grupo grupo) {
+        this.grupo = grupo;
     }
 }
