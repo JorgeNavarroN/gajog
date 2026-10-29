@@ -4,8 +4,10 @@
  */
 package com.utp.gajog.repository;
 
+import com.utp.gajog.enums.DiaSemana;
 import com.utp.gajog.model.Horario;
 import jakarta.persistence.LockModeType;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -28,4 +30,19 @@ public interface HorarioRepository extends JpaRepository<Horario, Long> {
 
     @EntityGraph(attributePaths = {"grupo.categoria"})
     List<Horario> findByGrupo_ActivoTrueOrderByGrupo_NombreAscDiaSemanaAscHoraInicioAsc();
+
+    @Query("""
+    SELECT COUNT(h)
+    FROM Horario h
+    WHERE h.grupo.activo = true
+      AND h.grupo.instructor.id = :instructorId
+      AND h.diaSemana = :dia
+      AND h.horaInicio < :fin
+      AND h.horaFin > :inicio
+    """)
+    long contarCrucesInstructor(
+            @Param("instructorId") Long instructorId,
+            @Param("dia") DiaSemana dia,
+            @Param("inicio") LocalTime inicio,
+            @Param("fin") LocalTime fin);
 }
