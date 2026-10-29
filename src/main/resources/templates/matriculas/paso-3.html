@@ -35,6 +35,12 @@
 
                 <input type="hidden" id="grupoId" name="grupoId">
 
+                <div class="errores-formulario"
+                     role="alert"
+                     th:if="${errorConfirmacion != null}"
+                     th:text="${errorConfirmacion}">
+                </div>
+
                 <div class="asignacion-grilla">
 
                     <section>
@@ -45,9 +51,15 @@
 
                             <div>Importe de matrícula</div>
 
-                            <strong style="font-size: 30px;">
-                                S/ 30.00
+                            <strong style="font-size: 30px;"
+                                    th:if="${registroMatricula.importeMatricula != null}"
+                                    th:text="${'S/ ' + #numbers.formatDecimal(
+                                    registroMatricula.importeMatricula, 1, 2)}">
                             </strong>
+
+                            <span th:if="${registroMatricula.importeMatricula == null}">
+                                Tarifa no disponible
+                            </span>
 
                         </div>
 
@@ -57,7 +69,7 @@
                                 Medio de pago *
                             </label>
 
-                            <select id="medioPago" disabled required>
+                            <select id="medioPago" name="medioPago" required>
                                 <option value="">Seleccionar medio</option>
                                 <option value="EFECTIVO">Efectivo</option>
                                 <option value="YAPE">Yape</option>
@@ -78,8 +90,9 @@
 
                             <input type="checkbox"
                                    id="pagoRecibido"
+                                   name="pagoRecibido"
+                                   value="true"
                                    required
-                                   disabled
                                    style="width: 17px;
                                    min-height: 17px;
                                    margin-top: 3px;
@@ -153,6 +166,7 @@
                     <button type="submit"
                             id="confirmar-matricula"
                             class="boton boton-primario"
+                            th:attr="data-tarifa-lista=${registroMatricula.importeMatricula != null}"
                             disabled>
                         Confirmar matrícula
                     </button>
@@ -213,61 +227,79 @@
 
             <script>
                 (() => {
+                function cargarGrupoSeleccionado() {
                 const pantalla = document.getElementById("pantalla-pago");
+                const campoGrupo = document.getElementById("grupoId");
+                const nombreGrupo = document.getElementById("grupo-elegido");
+                const lista = document.getElementById("horarios-elegidos");
+                const boton = document.getElementById("confirmar-matricula");
 
-                const clave =
-                "gajog-captura-grupo-" + pantalla.dataset.dni;
-
-                let seleccion = null;
-
-                try {
-                seleccion = JSON.parse(
-                sessionStorage.getItem(clave)
+                if (!pantalla || !campoGrupo || !nombreGrupo || !lista || !boton) {
+                console.error(
+                "Paso 3: falta un elemento del formulario.",
+                { pantalla, campoGrupo, nombreGrupo, lista, boton }
                 );
-                } catch {
-                // No hay una selección válida.
+                return;
                 }
 
-                const opciones = [
+                boton.disabled = true;
+                campoGrupo.value = "";
+
+                const clave = "gajog-captura-grupo-" + pantalla.dataset.dni;
+                let seleccion;
+
+                try {
+                seleccion = JSON.parse(sessionStorage.getItem(clave));
+                } catch (error) {
+                console.error("No se pudo recuperar el grupo.", error);
+                return;
+                }
+
+                const radio = [
                 ...document.querySelectorAll(
                 '#grupos-para-captura input[name="grupoVisual"]'
                 )
-                ];
-
-                const radio = opciones.find(opcion =>
+                ].find(opcion =>
                 seleccion &&
                 opcion.value === String(seleccion.id) &&
                 !opcion.disabled
                 );
 
                 if (!radio) {
+                nombreGrupo.textContent =
+                "Vuelve al paso anterior y selecciona un grupo disponible.";
                 return;
                 }
 
                 const tarjeta = radio.closest("label");
 
-                document.getElementById("grupo-elegido")
-                .textContent = tarjeta.dataset.nombre;
+                if (!tarjeta) {
+                console.error("No se encontró la tarjeta del grupo.");
+                return;
+                }
 
-                const lista = document.getElementById(
-                "horarios-elegidos"
-                );
+                campoGrupo.value = radio.value;
+                nombreGrupo.textContent = tarjeta.dataset.nombre;
+                lista.replaceChildren();
 
-                tarjeta.querySelectorAll("[data-horario]")
-                .forEach(horario => {
+                tarjeta.querySelectorAll("[data-horario]").forEach(horario => {
                 const elemento = document.createElement("li");
-
-                elemento.textContent =
-                horario.textContent.trim();
-
+                elemento.textContent = horario.textContent.trim();
                 lista.append(elemento);
                 });
 
-                document.getElementById("grupoId").value = radio.value;
+                boton.disabled = boton.dataset.tarifaLista !== "true";
+                }
 
-                document.getElementById(
-                "confirmar-matricula"
-                ).disabled = false;
+                if (document.readyState === "loading") {
+                document.addEventListener(
+                "DOMContentLoaded",
+                cargarGrupoSeleccionado,
+                { once: true }
+                );
+                } else {
+                cargarGrupoSeleccionado();
+                }
                 })();
             </script>
 

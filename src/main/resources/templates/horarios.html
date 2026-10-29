@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Grupos y horarios', 'horarios', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .horarios-cabecera {
+                    margin-bottom: 24px;
+                }
+
+                .horarios-cabecera h1 {
+                    margin: 6px 0 8px;
+                }
+
+                .horarios-secundario {
+                    color: #91a2b9;
+                    font-size: 13px;
+                }
+
+                .horarios-tabla-contenedor {
+                    max-height: 60dvh;
+                    overflow: auto;
+                }
+
+                .horarios-tabla {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                .horarios-tabla th,
+                .horarios-tabla td {
+                    padding: 14px 12px;
+                    text-align: left;
+                    border-bottom: 1px solid #293343;
+                    vertical-align: top;
+                }
+
+                .horarios-tabla th {
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                    background: #171e27;
+                    color: #91a2b9;
+                    font-size: 12px;
+                }
+
+                .horarios-tabla td {
+                    font-size: 13px;
+                }
+
+                .horarios-lista {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    min-width: 180px;
+                }
+
+                .horarios-lista li + li {
+                    margin-top: 6px;
+                }
+
+                .horarios-estado {
+                    display: inline-block;
+                    padding: 5px 9px;
+                    border-radius: 20px;
+                    font-size: 11px;
+                    white-space: nowrap;
+                }
+
+                .horarios-activo {
+                    color: #63e6a0;
+                    background: #103e2c;
+                }
+
+                .horarios-inactivo {
+                    color: #ff8b99;
+                    background: #421b26;
+                }
+
+                .horarios-cupos {
+                    white-space: nowrap;
+                }
+
+                .horarios-cabecera {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 20px;
+                    width: 100%;
+                }
+
+                .horarios-cabecera > .boton {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex: 0 0 auto;
+                    width: auto;
+                    height: 40px;
+                    min-height: 40px;
+                    padding: 0 18px;
+                    margin-left: auto;
+                    white-space: nowrap;
+                }
+            </style>
+
+            <header class="horarios-cabecera">
+                <div>
+                    <p class="horarios-secundario">GESTIÓN / CLASES</p>
+                    <h1>Grupos y horarios</h1>
+                    <p class="horarios-secundario">
+                        Consulta los instructores, horarios y cupos de cada grupo.
+                    </p>
+                </div>
+
+                <a class="boton boton-primario"
+                   th:href="@{/horarios/nuevo}">
+                    + Nuevo grupo
+                </a>
+            </header>
+
+            <div class="caja-categoria"
+                 style="margin-bottom: 16px;"
+                 role="status"
+                 th:if="${exito != null}"
+                 th:text="${exito}">
+            </div>
+
+            <section class="panel">
+
+                <p class="horarios-secundario"
+                   th:if="${#lists.isEmpty(grupos)}">
+                    Todavía no hay grupos registrados.
+                </p>
+
+                <div class="horarios-tabla-contenedor"
+                     th:unless="${#lists.isEmpty(grupos)}">
+
+                    <table class="horarios-tabla">
+                        <thead>
+                            <tr>
+                                <th>Grupo</th>
+                                <th>Instructor</th>
+                                <th>Horarios</th>
+                                <th>Cupos</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr th:each="grupo : ${grupos}">
+                                <td>
+                                    <strong th:text="${grupo.nombre()}"></strong>
+
+                                    <div class="horarios-secundario"
+                                         style="margin-top: 6px;"
+                                         th:text="${grupo.categoria()}">
+                                    </div>
+                                </td>
+
+                                <td th:text="${grupo.instructor()}"></td>
+
+                                <td>
+                                    <ul class="horarios-lista">
+                                        <li th:each="horario : ${grupo.horarios()}"
+                                            th:text="${horario}">
+                                        </li>
+                                    </ul>
+
+                                    <span class="horarios-secundario"
+                                          th:if="${#lists.isEmpty(grupo.horarios())}">
+                                        Sin horarios
+                                    </span>
+                                </td>
+
+                                <td class="horarios-cupos">
+                                    <strong th:text="${grupo.ocupados()
+                                            + ' / ' + grupo.cupoMaximo()}">
+                                    </strong>
+
+                                    <div class="horarios-secundario"
+                                         style="margin-top: 6px;"
+                                         th:text="${grupo.vacantes() + ' disponibles'}">
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="horarios-estado"
+                                          th:classappend="${grupo.activo()
+                                          ? 'horarios-activo'
+                                          : 'horarios-inactivo'}"
+                                          th:text="${grupo.activo()
+                                          ? 'Activo'
+                                          : 'Inactivo'}">
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </section>
+    </body>
+</html>
