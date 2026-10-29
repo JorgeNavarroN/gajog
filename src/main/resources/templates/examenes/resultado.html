@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+    <body>
+
+
+        <div th:fragment="panel">
+
+            <div class="aviso aviso-info"
+                 th:if="${examen == null}">
+                <strong>Todavía no hay exámenes</strong>
+                Cuando el alumno rinda su primer examen, el resultado
+                aparecerá aquí.
+            </div>
+
+            <div class="aviso aviso-info"
+                 th:if="${examen != null and examenPendiente}">
+                <strong>Examen en curso</strong>
+                <span th:text="${pagado
+                      ? 'El pago está registrado; falta la evaluación del instructor.'
+                      : 'Falta registrar el pago del examen.'}">
+                    Estado
+                </span>
+            </div>
+
+            <!-- Resultado del último examen -->
+            <th:block th:if="${examen != null and !examenPendiente}">
+
+                <div class="aviso aviso-ok"
+                     th:if="${examen.resultado.name() == 'APROBADO'}">
+                    <strong>Ascenso aprobado</strong>
+                    <span th:text="${'Nuevo cinturón: '
+                          + examen.cinturonObjetivo.nombre
+                          + ' · puntaje ' + examen.puntajeTotal
+                          + ' de ' + puntajeMaximoTotal
+                          + ' · ' + #temporals.format(examen.fechaExamen, 'dd/MM/yyyy')}">
+                        Resultado
+                    </span>
+                </div>
+
+                <div class="aviso aviso-alerta"
+                     th:if="${examen.resultado.name() == 'REPROBADO'}">
+                    <strong>Examen reprobado</strong>
+                    <span th:text="${'El alumno conserva su cinturón. Puntaje '
+                          + examen.puntajeTotal + ' de ' + puntajeMaximoTotal
+                          + ' (mínimo ' + puntajeMinimo + ') · '
+                          + #temporals.format(examen.fechaExamen, 'dd/MM/yyyy')}">
+                        Resultado
+                    </span>
+                </div>
+
+                <h3 class="subtitulo">Calificación por criterio</h3>
+
+                <table class="tabla-simple">
+                    <thead>
+                        <tr>
+                            <th>Criterio</th>
+                            <th>Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="detalle : ${detalles}">
+                            <td th:text="${detalle.criterio.nombre}">Poomsae</td>
+                            <td th:text="${detalle.puntaje + ' / '
+                                + detalle.criterio.puntajeMaximo}">
+                                28 / 30
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="descripcion"
+                   style="margin-top: 14px"
+                   th:if="${examen.observaciones != null}">
+                    <strong>Observaciones:</strong>
+                    <span th:text="${examen.observaciones}">Comentario</span>
+                </p>
+
+            </th:block>
+
+            <!-- Historial de ascensos del alumno (progreso) -->
+            <h3 class="subtitulo">Historial de ascensos</h3>
+
+            <p class="descripcion" th:if="${historial.isEmpty()}">
+                Aún no tiene ascensos registrados.
+            </p>
+
+            <table class="tabla-simple" th:if="${!historial.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cinturón obtenido</th>
+                        <th>Examen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="registro : ${historial}">
+                        <td th:text="${#temporals.format(registro.fechaObtencion, 'dd/MM/yyyy')}">
+                            29/09/2026
+                        </td>
+                        <td>
+                            <span class="insignia-cinturon"
+                                  th:text="${registro.cinturon.nombre}"
+                                  th:style="|background:${@coloresCinturon.fondo(registro.cinturon.color)};color:${@coloresCinturon.texto(registro.cinturon.color)}|">
+                                Amarillo
+                            </span>
+                        </td>
+                        <td th:text="${registro.examen != null
+                            ? '#' + registro.examen.id : '—'}">
+                            #1
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+
+            <h3 class="subtitulo">Exámenes rendidos</h3>
+
+            <p class="descripcion" th:if="${examenesAlumno.isEmpty()}">
+                Sin exámenes registrados.
+            </p>
+
+            <table class="tabla-simple" th:if="${!examenesAlumno.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Cinturón objetivo</th>
+                        <th>Puntaje</th>
+                        <th>Resultado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="e : ${examenesAlumno}">
+                        <td th:text="${e.id}">1</td>
+                        <td th:text="${#temporals.format(e.fechaExamen, 'dd/MM/yyyy')}">
+                            29/09/2026
+                        </td>
+                        <td th:text="${e.cinturonObjetivo.nombre}">Amarillo</td>
+                        <td th:text="${e.puntajeTotal != null ? e.puntajeTotal : '—'}">
+                            85
+                        </td>
+                        <td>
+                            <span class="estado"
+                                  th:text="${e.resultado}"
+                                  th:classappend="${e.resultado.name() == 'APROBADO'
+                                  ? 'estado-aprobado'
+                                  : (e.resultado.name() == 'REPROBADO'
+                                  ? 'estado-reprobado' : 'estado-pendiente')}">
+                                APROBADO
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+    </body>
+</html>
