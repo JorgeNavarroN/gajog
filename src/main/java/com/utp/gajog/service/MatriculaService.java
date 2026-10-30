@@ -112,11 +112,18 @@ public class MatriculaService {
 
         String texto = busqueda == null ? "" : busqueda.trim();
 
-        return matriculaRepository.buscarParaListado(
+        List<Matricula> matriculas = matriculaRepository.buscarParaListado(
                 texto,
                 categoriaId,
                 grupoId,
-                estado
-        );
+                estado);
+
+        // Carga una vez los horarios de cada grupo dentro de la transacción.
+        matriculas.stream()
+                .map(Matricula::getGrupo)
+                .distinct()
+                .forEach(grupo -> grupo.getHorarios().size());
+
+        return matriculas;
     }
 }
