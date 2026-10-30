@@ -7,6 +7,7 @@ package com.utp.gajog.model;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.BatchSize;
 
 /**
  *
@@ -28,6 +29,7 @@ public class Grupo {
     private Categoria categoria;
 
     @OneToMany(mappedBy = "grupo")
+    @BatchSize(size = 50)
     private List<Horario> horarios = new ArrayList<>();
 
     @Column(nullable = false)

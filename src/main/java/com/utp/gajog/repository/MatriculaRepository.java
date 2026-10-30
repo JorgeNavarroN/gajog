@@ -35,8 +35,7 @@ public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
     @EntityGraph(attributePaths = {
         "alumno.persona",
         "alumno.apoderado.persona",
-        "grupo.categoria",
-        "grupo.horarios"
+        "grupo.categoria"
     })
     @Query("""
     SELECT DISTINCT m
