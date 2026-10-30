@@ -20,7 +20,8 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     List<Pago> findByAlumno_IdOrderByFechaPagoDesc(Long alumnoId);
 
     List<Pago> findByMensualidad_IdAndEstado(
-            Long mensualidadId, EstadoPago estado);
+            Long mensualidadId, EstadoPago estado);    List<Pago> findByExamen_IdAndEstado(
+            Long examenId, EstadoPago estado);
 
     @EntityGraph(attributePaths = {
             "alumno.persona",

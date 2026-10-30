@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+    <body>
+
+        <!--
+          MITAD B del BPMN 3 - Pestaña "2. Evaluación"
+          Carril Instructor: "Evalúa combate, formas y rompimiento" y
+                             "Registra resultado y observaciones" (CU16, CU17)
+        -->
+        <div th:fragment="panel">
+
+            <!-- No hay un examen en curso -->
+            <div class="aviso aviso-info"
+                 th:if="${!examenPendiente}">
+                <strong>No hay un examen pendiente de evaluación</strong>
+                Primero registra el pago del examen en la pestaña
+                "1. Pago".
+            </div>
+
+            <a class="boton"
+               th:if="${!examenPendiente}"
+               th:href="@{/examenes(alumno=${seleccionado.id}, tab='pago')}">
+                ← Ir al pago
+            </a>
+
+            <!-- Rombo "¿Pago registrado?" = No -->
+            <th:block th:if="${examenPendiente and !pagado}">
+                <div class="aviso aviso-alerta">
+                    <strong>Pago pendiente</strong>
+                    El instructor podrá evaluar cuando el pago del examen
+                    esté registrado.
+                </div>
+
+                <a class="boton boton-primario"
+                   th:href="@{/examenes(alumno=${seleccionado.id}, tab='pago')}">
+                    ← Registrar el pago
+                </a>
+            </th:block>
+
+            <!-- Rombo "¿Pago registrado?" = Sí -->
+            <th:block th:if="${examenPendiente and pagado}">
+
+                <div class="aviso aviso-ok">
+                    <strong>Examen habilitado</strong>
+                    El pago está registrado. Califica cada criterio
+                    para el cinturón
+                    <b th:text="${examen.cinturonObjetivo.nombre}">Amarillo</b>.
+                    Se aprueba con
+                    <b th:text="${puntajeMinimo + ' de ' + puntajeMaximoTotal}">70 de 100</b>
+                    puntos.
+                </div>
+
+                <form th:action="@{/examenes/{id}/evaluacion(id=${examen.id})}"
+                      method="post">
+
+                    <input type="hidden"
+                           name="alumnoId"
+                           th:value="${seleccionado.id}">
+
+                    <div class="grilla-dos">
+                        <div class="campo"
+                             th:each="criterio : ${criterios}">
+                            <label th:for="${'puntaje-' + criterio.id}"
+                                   th:text="${criterio.nombre + ' (máx. '
+                                   + criterio.puntajeMaximo + ')'}">
+                                Poomsae (máx. 30)
+                            </label>
+                            <input type="number"
+                                   step="0.01"
+                                   min="0"
+                                   required
+                                   th:id="${'puntaje-' + criterio.id}"
+                                   th:name="${'puntaje-' + criterio.id}"
+                                   th:max="${criterio.puntajeMaximo}">
+                        </div>
+                    </div>
+
+                    <div class="campo" style="margin-top: 20px">
+                        <label for="observaciones">
+                            Observaciones del instructor
+                        </label>
+                        <textarea id="observaciones"
+                                  name="observaciones"
+                                  rows="4"
+                                  maxlength="1000"
+                                  placeholder="Describe el desempeño durante el examen."></textarea>
+                    </div>
+
+                    <div class="acciones-formulario"
+                         style="justify-content: flex-end">
+                        <button type="submit" class="boton boton-primario">
+                            Guardar resultado →
+                        </button>
+                    </div>
+
+                </form>
+
+            </th:block>
+
+        </div>
+
+    </body>
+</html>

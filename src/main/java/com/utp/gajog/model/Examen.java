@@ -35,8 +35,8 @@ public class Examen {
             = ResultadoExamen.PENDIENTE;
 
     @Column(name = "puntaje_total", precision = 6, scale = 2)
-    private BigDecimal puntajeTotal;
-
+    private BigDecimal puntajeTotal;    @Column(length = 1000)
+    private String observaciones;
     public Examen() {
     }
 
@@ -87,5 +87,11 @@ public class Examen {
 
     public void setPuntajeTotal(BigDecimal puntajeTotal) {
         this.puntajeTotal = puntajeTotal;
+    }    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 }
