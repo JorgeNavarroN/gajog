@@ -23,7 +23,9 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
     @EntityGraph(attributePaths = {"persona"})
     List<Instructor> findAllByOrderByPersona_ApellidosAsc();
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT i FROM Instructor i WHERE i.id = :id")
+    @Query(
+            value = "SELECT * FROM instructores WHERE id = :id FOR UPDATE",
+            nativeQuery = true
+    )
     Optional<Instructor> findByIdConBloqueo(@Param("id") Long id);
 }
