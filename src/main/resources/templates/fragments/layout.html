@@ -638,6 +638,12 @@
                     Asistencia
                 </a>
 
+                <a th:href="@{/examenes}"
+                   class="menu-enlace"
+                   th:classappend="${seccion == 'examenes' ? 'activo' : ''}">
+                    Exámenes
+                </a>
+
                 <div class="menu-titulo">REGISTRO</div>
 
                 <a th:href="@{/matriculas/nueva/paso-1}"

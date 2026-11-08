@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Exámenes',
+      'examenes',
+      ~{::contenido}
+      )}">
+
+    <body>
+
+
+        <section th:fragment="contenido">
+
+            <style>
+                .examenes-grilla {
+                    display: grid;
+                    grid-template-columns: minmax(280px, 1fr) minmax(0, 1.4fr);
+                    gap: 24px;
+                    align-items: start;
+                }
+
+                .examenes-grilla h2 {
+                    margin: 0 0 8px;
+                    font-size: 18px;
+                }
+
+                .alumno-fila {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 12px;
+                    padding: 14px;
+                    border: 1px solid var(--borde);
+                    border-radius: 10px;
+                    background: var(--campo);
+                }
+
+                .alumno-fila:hover {
+                    border-color: #4a5a72;
+                }
+
+                .alumno-fila.seleccionado {
+                    border-color: var(--rojo);
+                    background: #2b1c27;
+                }
+
+                .alumno-fila .inicial {
+                    display: grid;
+                    place-items: center;
+                    flex: none;
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 8px;
+                    background: #202a37;
+                    font-weight: 700;
+                }
+
+                .alumno-datos {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .alumno-datos strong {
+                    display: block;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size: 13px;
+                }
+
+                .alumno-datos small {
+                    display: block;
+                    margin-top: 4px;
+                    color: var(--secundario);
+                    font-size: 11px;
+                }
+
+                .insignia-cinturon {
+                    flex: none;
+                    padding: 5px 10px;
+                    border: 1px solid #4a5a72;
+                    border-radius: 999px;
+                    font-size: 11px;
+                    font-weight: 700;
+                }
+
+                .examenes-cabecera-alumno {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                }
+
+                .examenes-cabecera-alumno h2 {
+                    margin: 0;
+                }
+
+                .examenes-pestanas {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 6px;
+                    margin-bottom: 22px;
+                    padding: 5px;
+                    border-radius: 10px;
+                    background: var(--campo);
+                }
+
+                .examenes-pestanas a {
+                    padding: 10px;
+                    border-radius: 7px;
+                    color: var(--secundario);
+                    font-size: 12px;
+                    font-weight: 600;
+                    text-align: center;
+                }
+
+                .examenes-pestanas a.activa {
+                    background: #202a37;
+                    color: white;
+                }
+
+                .aviso {
+                    margin-bottom: 18px;
+                    padding: 14px 16px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    line-height: 1.6;
+                }
+
+                .aviso strong {
+                    display: block;
+                    margin-bottom: 4px;
+                    font-size: 13px;
+                }
+
+                .aviso-ok {
+                    border: 1px solid #1f6f4d;
+                    background: #0f2d22;
+                    color: #7be3b5;
+                }
+
+                .aviso-alerta {
+                    border: 1px solid #8a2a3a;
+                    background: #351923;
+                    color: #ffabb9;
+                }
+
+                .aviso-info {
+                    border: 1px solid #30475e;
+                    background: #14202f;
+                    color: #a8d2ff;
+                }
+
+                .indicadores {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    margin-bottom: 18px;
+                }
+
+                .indicador {
+                    flex: 1;
+                    min-width: 170px;
+                    padding: 12px 14px;
+                    border: 1px solid var(--borde);
+                    border-radius: 8px;
+                    background: var(--campo);
+                    font-size: 11px;
+                    color: var(--secundario);
+                }
+
+                .indicador strong {
+                    display: block;
+                    margin-top: 5px;
+                    font-size: 16px;
+                    color: var(--texto);
+                }
+
+                .indicador.cumple strong {
+                    color: #4ce3a1;
+                }
+
+                .indicador.falta strong {
+                    color: #f6c676;
+                }
+
+                .grilla-tres {
+                    display: grid;
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    gap: 16px;
+                }
+
+                .tabla-simple {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                .tabla-simple th,
+                .tabla-simple td {
+                    padding: 11px 10px;
+                    border-bottom: 1px solid var(--borde);
+                    font-size: 12px;
+                    text-align: left;
+                }
+
+                .tabla-simple th {
+                    color: var(--secundario);
+                    font-size: 10px;
+                    letter-spacing: .8px;
+                    text-transform: uppercase;
+                }
+
+                .subtitulo {
+                    margin: 26px 0 10px;
+                    font-size: 14px;
+                }
+
+                .estado-aprobado {
+                    background: #123b2c;
+                    color: #4ce3a1;
+                }
+
+                .estado-reprobado {
+                    background: #4a1f2a;
+                    color: #ff9aae;
+                }
+
+                @media (max-width: 1000px) {
+                    .examenes-grilla {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                @media (max-width: 600px) {
+                    .grilla-tres {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
+
+            <div class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">ACADEMIA / ASCENSOS</div>
+
+                    <h1 class="titulo">Exámenes de cinturón</h1>
+
+                    <p class="descripcion">
+                        Controla el pago, la evaluación y el resultado
+                        de cada alumno.
+                    </p>
+                </div>
+            </div>
+
+            <div class="caja-categoria"
+                 role="status"
+                 th:if="${exito != null}"
+                 th:text="${exito}">
+            </div>
+
+            <div class="errores-formulario"
+                 role="alert"
+                 th:if="${error != null}"
+                 th:text="${error}">
+            </div>
+
+            <div class="examenes-grilla">
+
+                <!-- Lista de alumnos matriculados -->
+                <section class="panel">
+
+                    <h2>Alumnos matriculados</h2>
+
+                    <p class="descripcion">
+                        Selecciona un alumno para gestionar su examen
+                        de ascenso.
+                    </p>
+
+                    <p class="descripcion"
+                       style="margin-top: 16px"
+                       th:if="${filas.isEmpty()}">
+                        No hay alumnos con matrícula activa todavía.
+                    </p>
+
+                    <a th:each="fila : ${filas}"
+                       th:href="@{/examenes(alumno=${fila.alumno.id})}"
+                       class="alumno-fila"
+                       th:classappend="${seleccionado != null
+                       and seleccionado.id == fila.alumno.id
+                       ? 'seleccionado' : ''}">
+
+                        <span class="inicial"
+                              th:text="${fila.inicial}">A</span>
+
+                        <span class="alumno-datos">
+                            <strong th:text="${fila.alumno.persona.apellidos
+                                    + ', ' + fila.alumno.persona.nombres}">
+                                Apellido, Nombre
+                            </strong>
+                            <small th:text="${fila.estado}">Estado</small>
+                        </span>
+
+                        <span class="insignia-cinturon"
+                              th:if="${fila.alumno.cinturonActual != null}"
+                              th:text="${fila.alumno.cinturonActual.nombre}"
+                              th:style="|background:${@coloresCinturon.fondo(fila.alumno.cinturonActual.color)};color:${@coloresCinturon.texto(fila.alumno.cinturonActual.color)}|">
+                            Blanco
+                        </span>
+
+                    </a>
+
+                    <div class="aviso aviso-info" style="margin: 18px 0 0">
+                        El pago del examen se registra por separado
+                        de la mensualidad.
+                    </div>
+
+                </section>
+
+                <!-- Panel del alumno seleccionado -->
+                <section class="panel">
+
+                    <p class="descripcion" th:if="${seleccionado == null}">
+                        Selecciona un alumno de la lista para ver
+                        su examen.
+                    </p>
+
+                    <th:block th:if="${seleccionado != null}">
+
+                        <div class="examenes-cabecera-alumno">
+                            <h2 th:text="${seleccionado.persona.nombres
+                                + ' ' + seleccionado.persona.apellidos}">
+                                Alumno
+                            </h2>
+
+                            <span class="insignia-cinturon"
+                                  th:if="${seleccionado.cinturonActual != null}"
+                                  th:text="${'Cinturón actual: '
+                                  + seleccionado.cinturonActual.nombre}"
+                                  th:style="|background:${@coloresCinturon.fondo(seleccionado.cinturonActual.color)};color:${@coloresCinturon.texto(seleccionado.cinturonActual.color)}|">
+                                Cinturón actual
+                            </span>
+                        </div>
+
+                        <nav class="examenes-pestanas"
+                             aria-label="Pasos del examen">
+                            <a th:href="@{/examenes(alumno=${seleccionado.id}, tab='pago')}"
+                               th:classappend="${tab == 'pago' ? 'activa' : ''}">
+                                1. Pago
+                            </a>
+                            <a th:href="@{/examenes(alumno=${seleccionado.id}, tab='evaluacion')}"
+                               th:classappend="${tab == 'evaluacion' ? 'activa' : ''}">
+                                2. Evaluación
+                            </a>
+                            <a th:href="@{/examenes(alumno=${seleccionado.id}, tab='resultado')}"
+                               th:classappend="${tab == 'resultado' ? 'activa' : ''}">
+                                3. Resultado
+                            </a>
+                        </nav>
+
+                        <th:block th:if="${tab == 'pago'}">
+                            <div th:replace="~{examenes/pago :: panel}"></div>
+                        </th:block>
+
+                        <th:block th:if="${tab == 'evaluacion'}">
+                            <div th:replace="~{examenes/evaluacion :: panel}"></div>
+                        </th:block>
+
+                        <th:block th:if="${tab == 'resultado'}">
+                            <div th:replace="~{examenes/resultado :: panel}"></div>
+                        </th:block>
+
+                    </th:block>
+
+                </section>
+
+            </div>
+
+        </section>
+
+    </body>
+</html>
