@@ -24,8 +24,10 @@ public interface HorarioRepository extends JpaRepository<Horario, Long> {
 
     List<Horario> findByGrupo_Id(Long grupoId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT h FROM Horario h WHERE h.id = :id")
+    @Query(
+            value = "SELECT * FROM horarios WHERE id = :id FOR UPDATE",
+            nativeQuery = true
+    )
     Optional<Horario> findByIdConBloqueo(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"grupo.categoria"})

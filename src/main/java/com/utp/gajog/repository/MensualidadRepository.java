@@ -35,7 +35,9 @@ public interface MensualidadRepository extends JpaRepository<Mensualidad, Long> 
     List<Mensualidad> findByAnioAndMesOrderByAlumno_Persona_ApellidosAsc(
             Integer anio, Integer mes);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT m FROM Mensualidad m WHERE m.id = :id")
+    @Query(
+            value = "SELECT * FROM mensualidades WHERE id = :id FOR UPDATE",
+            nativeQuery = true
+    )
     Optional<Mensualidad> findByIdConBloqueo(@Param("id") Long id);
 }
