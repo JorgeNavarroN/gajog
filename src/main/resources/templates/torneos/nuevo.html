@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Nuevo torneo', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .t-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+                .t-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                .t-tabla-ancho { min-width: 0 !important; }
+                .t-medalla-1 { background:#4a3b12; color:#ffd666; }
+                .t-medalla-2 { background:#2c3440; color:#d5dde8; }
+                .t-medalla-3 { background:#4a2c1a; color:#e8a66f; }
+                a.boton { text-decoration: none; }
+                .t-sub { margin: 28px 0 12px; font-size: 16px; }
+            </style>
+
+            <header class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">COMPETENCIAS</div>
+                    <h1 class="titulo">Nuevo torneo</h1>
+                </div>
+                <a class="boton" th:href="@{/torneos}">Volver</a>
+            </header>
+
+            <div class="caja-categoria" role="status" th:if="${exito != null}" th:text="${exito}"></div>
+            <div class="errores-formulario" role="alert" th:if="${error != null}" th:text="${error}"></div>
+
+            <form class="panel" method="post" th:action="@{/torneos/nuevo}" th:object="${torneoForm}">
+                <div class="grilla-dos">
+                    <div class="campo">
+                        <label for="nombre">Nombre del torneo</label>
+                        <input id="nombre" type="text" th:field="*{nombre}" maxlength="120" required>
+                    </div>
+                    <div class="campo">
+                        <label for="fecha">Fecha</label>
+                        <input id="fecha" type="date" th:field="*{fecha}" required>
+                    </div>
+                    <div class="campo">
+                        <label for="sede">Sede</label>
+                        <input id="sede" type="text" th:field="*{sede}" maxlength="150" required>
+                    </div>
+                    <div class="campo">
+                        <label for="modalidad">Modalidad</label>
+                        <select id="modalidad" th:field="*{modalidad}">
+                            <option th:each="m : ${modalidades}" th:value="${m}" th:text="${m.etiqueta}">Combate</option>
+                        </select>
+                    </div>
+                    <div class="campo">
+                        <label for="cuota">Cuota de inscripción (S/)</label>
+                        <input id="cuota" type="number" step="0.01" min="0" th:field="*{cuotaInscripcion}" required>
+                    </div>
+                </div>
+                <div class="acciones-formulario" style="margin-top: 24px;">
+                    <button type="submit" class="boton boton-primario">Crear torneo</button>
+                </div>
+            </form>
+
+        </section>
+    </body>
+</html>

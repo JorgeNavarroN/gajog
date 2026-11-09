@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Marcador de combate', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .mk { max-width: 1200px; margin: auto; }
+                .mk-cabecera { text-align: center; margin-bottom: 16px; }
+                .mk-cabecera .cat { font-size: 13px; color: var(--secundario); }
+                .mk-cabecera .ronda { font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+                .mk-centro { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; }
+                .mk-lado { padding: 22px; border-radius: 16px; text-align: center; border: 2px solid transparent; }
+                .mk-azul { background: #0e2a5c; border-color: #2f6fe0; }
+                .mk-rojo { background: #5c0e18; border-color: #e02f45; }
+                .mk-lado .tit { font-size: 12px; letter-spacing: 3px; font-weight: 800; opacity: .8; }
+                .mk-lado .nombre { font-size: 20px; font-weight: 700; margin: 6px 0 4px; min-height: 28px; }
+                .mk-lado .puntos { font-size: 120px; font-weight: 900; line-height: 1; margin: 10px 0; font-variant-numeric: tabular-nums; }
+                .mk-faltas { font-size: 13px; margin-bottom: 8px; }
+                .mk-rounds { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+                .mk-pip { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); }
+                .mk-pip.on { background: #ffd666; border-color: #ffd666; }
+                .mk-botones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+                .mk-botones .boton { min-height: 52px; font-size: 14px; font-weight: 800; }
+                .mk-botones .falta { grid-column: 1 / -1; background: #5a4410; border-color: #a8801f; }
+                .mk-reloj { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-width: 220px;
+                            padding: 20px; border: 1px solid var(--borde); border-radius: 16px; background: var(--panel); }
+                .mk-reloj .tiempo { font-size: 64px; font-weight: 900; font-variant-numeric: tabular-nums; }
+                .mk-reloj .round { font-size: 15px; font-weight: 800; letter-spacing: 1px; text-align: center; }
+                .mk-reloj .round.oro { color: #ffd666; }
+                .mk-reloj .fila { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+                .mk-aviso { margin: 16px 0; padding: 14px; border-radius: 10px; text-align: center; background: var(--panel); border: 1px solid var(--borde); min-height: 20px; }
+                .mk-aviso.error { background: #351923; border-color: #813343; color: #ffabb9; }
+                .mk-ganador { margin: 16px 0; padding: 22px; text-align: center; border-radius: 14px; background: #123b2c; color: #4ce3a1; font-size: 22px; font-weight: 800; display: none; }
+                .mk-pie { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+                @media (max-width: 900px) {
+                    .mk-centro { grid-template-columns: 1fr; }
+                    .mk-lado .puntos { font-size: 80px; }
+                }
+            </style>
+
+            <div class="mk" id="marcador" th:attr="data-combate=${combateId}">
+
+                <div class="mk-cabecera">
+                    <div class="cat" id="mk-categoria">Categoría</div>
+                    <div class="ronda" id="mk-ronda">Ronda</div>
+                </div>
+
+                <div class="mk-centro">
+
+                    <div class="mk-lado mk-azul">
+                        <div class="tit">CHONG · AZUL</div>
+                        <div class="nombre" id="nombre-AZUL">-</div>
+                        <div class="puntos" id="puntos-AZUL">0</div>
+                        <div class="mk-faltas">Faltas (gam-jeom): <strong id="faltas-AZUL">0</strong></div>
+                        <div class="mk-rounds" id="rounds-AZUL"></div>
+                        <div class="mk-botones" data-lado="AZUL">
+                            <button class="boton" data-tipo="PUNTO_1">+1<br><small>Puño</small></button>
+                            <button class="boton" data-tipo="PUNTO_2">+2<br><small>Tronco</small></button>
+                            <button class="boton" data-tipo="PUNTO_3">+3<br><small>Cabeza</small></button>
+                            <button class="boton falta" data-tipo="FALTA">Falta (gam-jeom)</button>
+                        </div>
+                    </div>
+
+                    <div class="mk-reloj">
+                        <div class="round" id="mk-round">ROUND 1</div>
+                        <div class="tiempo" id="mk-tiempo">02:00</div>
+                        <div class="fila">
+                            <button class="boton boton-primario" id="btn-iniciar">Iniciar</button>
+                            <button class="boton" id="btn-pausar">Pausar</button>
+                            <button class="boton" id="btn-reiniciar">Reiniciar</button>
+                        </div>
+                        <button class="boton" id="btn-round">Terminar round</button>
+                        <button class="boton" id="btn-deshacer">↶ Deshacer última</button>
+                    </div>
+
+                    <div class="mk-lado mk-rojo">
+                        <div class="tit">HONG · ROJO</div>
+                        <div class="nombre" id="nombre-ROJO">-</div>
+                        <div class="puntos" id="puntos-ROJO">0</div>
+                        <div class="mk-faltas">Faltas (gam-jeom): <strong id="faltas-ROJO">0</strong></div>
+                        <div class="mk-rounds" id="rounds-ROJO"></div>
+                        <div class="mk-botones" data-lado="ROJO">
+                            <button class="boton" data-tipo="PUNTO_1">+1<br><small>Puño</small></button>
+                            <button class="boton" data-tipo="PUNTO_2">+2<br><small>Tronco</small></button>
+                            <button class="boton" data-tipo="PUNTO_3">+3<br><small>Cabeza</small></button>
+                            <button class="boton falta" data-tipo="FALTA">Falta (gam-jeom)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mk-aviso" id="mk-aviso">Presione “Iniciar” para comenzar el round.</div>
+                <div class="mk-ganador" id="mk-ganador"></div>
+
+                <div class="mk-pie">
+                    <a class="boton" th:href="@{/torneos/{id}(id=${torneoId})}">← Volver a la llave</a>
+                    <div>
+                        <button class="boton" id="wo-AZUL">W.O. CHONG (azul no se presentó)</button>
+                        <button class="boton" id="wo-ROJO">W.O. HONG (rojo no se presentó)</button>
+                    </div>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                (function () {
+                    var combateId = /*[[${combateId}]]*/ 0;
+                    var base = /*[[@{/torneos/combates/}]]*/ '/torneos/combates/';
+                    var DURACION = 120;           // segundos por round
+                    var restante = DURACION;
+                    var intervalo = null;
+                    var estadoActual = null;
+
+                    var $ = function (id) { return document.getElementById(id); };
+
+                    function formato(s) {
+                        var m = Math.floor(s / 60), x = s % 60;
+                        return (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x;
+                    }
+                    function pintarReloj() { $('mk-tiempo').textContent = formato(restante); }
+
+                    function parar() { if (intervalo) { clearInterval(intervalo); intervalo = null; } }
+
+                    function iniciar() {
+                        if (intervalo || !estadoActual || !estadoActual.listo || estadoActual.estado === 'FINALIZADO') { return; }
+                        intervalo = setInterval(function () {
+                            restante--;
+                            pintarReloj();
+                            if (restante <= 0) {
+                                parar();
+                                aviso('Se acabó el tiempo. Presione “Terminar round”.', false);
+                            }
+                        }, 1000);
+                    }
+
+                    function aviso(texto, esError) {
+                        var el = $('mk-aviso');
+                        el.textContent = texto || '';
+                        el.className = 'mk-aviso' + (esError ? ' error' : '');
+                    }
+
+                    function pintarRounds(lado, ganados) {
+                        var cont = $('rounds-' + lado);
+                        cont.innerHTML = '';
+                        for (var i = 0; i < 2; i++) {
+                            var pip = document.createElement('span');
+                            pip.className = 'mk-pip' + (i < ganados ? ' on' : '');
+                            cont.appendChild(pip);
+                        }
+                    }
+
+                    function pintar(e, mensaje) {
+                        var cambioRound = estadoActual && estadoActual.roundActual !== e.roundActual;
+                        estadoActual = e;
+                        $('mk-categoria').textContent = e.categoria;
+                        $('mk-ronda').textContent = e.nombreRonda;
+                        $('nombre-AZUL').textContent = e.nombreAzul;
+                        $('nombre-ROJO').textContent = e.nombreRojo;
+                        $('puntos-AZUL').textContent = e.puntosAzul;
+                        $('puntos-ROJO').textContent = e.puntosRojo;
+                        $('faltas-AZUL').textContent = e.faltasAzul;
+                        $('faltas-ROJO').textContent = e.faltasRojo;
+                        pintarRounds('AZUL', e.roundsAzul);
+                        pintarRounds('ROJO', e.roundsRojo);
+
+                        var r = $('mk-round');
+                        r.textContent = e.roundDeOro ? 'ROUND DE ORO · PRIMER PUNTO GANA' : 'ROUND ' + e.roundActual + ' DE 3';
+                        r.className = 'round' + (e.roundDeOro ? ' oro' : '');
+
+                        if (cambioRound) { parar(); restante = e.roundDeOro ? 60 : DURACION; pintarReloj(); }
+
+                        var terminado = e.estado === 'FINALIZADO';
+                        var activo = e.listo && !terminado;
+                        document.querySelectorAll('.mk-botones button, #btn-iniciar, #btn-pausar, #btn-reiniciar, #btn-round, #btn-deshacer, #wo-AZUL, #wo-ROJO')
+                            .forEach(function (b) { b.disabled = !activo; });
+
+                        var g = $('mk-ganador');
+                        if (terminado) {
+                            parar();
+                            g.style.display = 'block';
+                            g.textContent = '🏆 Ganador: ' + e.ganador + (e.tipoVictoria ? ' · ' + e.tipoVictoria : '');
+                        } else {
+                            g.style.display = 'none';
+                        }
+
+                        if (!e.listo && !terminado) { aviso('Este combate espera al ganador del combate anterior.', false); }
+                        else if (mensaje) { aviso(mensaje, false); }
+                        else if (e.mensaje) { aviso(e.mensaje, false); }
+                    }
+
+                    function llamar(ruta, params) {
+                        var cuerpo = new URLSearchParams(params || {});
+                        return fetch(base + combateId + ruta, { method: 'POST', body: cuerpo })
+                            .then(function (r) {
+                                return r.json().then(function (datos) {
+                                    if (!r.ok) { throw new Error(datos.error || 'Error'); }
+                                    return datos;
+                                });
+                            })
+                            .then(function (datos) { pintar(datos, null); })
+                            .catch(function (err) { aviso(err.message, true); });
+                    }
+
+                    document.querySelectorAll('.mk-botones').forEach(function (grupo) {
+                        grupo.querySelectorAll('button').forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                                llamar('/evento', { lado: grupo.getAttribute('data-lado'), tipo: btn.getAttribute('data-tipo') });
+                            });
+                        });
+                    });
+
+                    $('btn-iniciar').addEventListener('click', iniciar);
+                    $('btn-pausar').addEventListener('click', parar);
+                    $('btn-reiniciar').addEventListener('click', function () { parar(); restante = DURACION; pintarReloj(); });
+                    $('btn-round').addEventListener('click', function () { parar(); llamar('/round'); });
+                    $('btn-deshacer').addEventListener('click', function () { llamar('/deshacer'); });
+                    $('wo-AZUL').addEventListener('click', function () {
+                        if (confirm('¿Confirma W.O.? Ganará HONG (rojo).')) { llamar('/wo', { ausente: 'AZUL' }); }
+                    });
+                    $('wo-ROJO').addEventListener('click', function () {
+                        if (confirm('¿Confirma W.O.? Ganará CHONG (azul).')) { llamar('/wo', { ausente: 'ROJO' }); }
+                    });
+
+                    pintarReloj();
+                    fetch(base + combateId + '/estado')
+                        .then(function (r) { return r.json(); })
+                        .then(function (e) { pintar(e, null); })
+                        .catch(function () { aviso('No se pudo cargar el combate.', true); });
+                })();
+            </script>
+
+        </section>
+    </body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <title>Constancia de participación</title>
+        <style>
+            body { font-family: Georgia, serif; background: #f4f4f4; margin: 0; padding: 30px; color: #222; }
+            .hoja { max-width: 820px; margin: auto; padding: 60px 50px; background: white; border: 8px double #941326; text-align: center; }
+            h1 { font-size: 34px; letter-spacing: 2px; margin: 0 0 6px; color: #941326; }
+            .sub { margin-bottom: 40px; color: #666; }
+            .nombre { font-size: 30px; margin: 16px 0; border-bottom: 1px solid #999; display: inline-block; padding: 0 30px 6px; }
+            .medalla { font-size: 22px; font-weight: bold; margin: 24px 0; }
+            .pie { margin-top: 60px; color: #666; font-size: 13px; }
+            .acciones { text-align: center; margin-top: 20px; }
+            @media print { body { background: white; padding: 0; } .acciones { display: none; } }
+        </style>
+    </head>
+    <body>
+        <div class="hoja">
+            <h1>CONSTANCIA</h1>
+            <div class="sub">GAJOG TKD · Academia de Taekwondo</div>
+            <p>Se otorga a</p>
+            <div class="nombre" th:text="${inscripcion.nombreCompleto}">Nombre</div>
+            <p>por haber obtenido el puesto</p>
+            <div class="medalla"
+                 th:text="${inscripcion.puesto == 1 ? 'PRIMER PUESTO · ORO' : (inscripcion.puesto == 2 ? 'SEGUNDO PUESTO · PLATA' : 'TERCER PUESTO · BRONCE')}">PRIMER PUESTO</div>
+            <p>en la categoría <strong th:text="${inscripcion.categoria}">Categoría</strong><br>
+               del torneo <strong th:text="${torneo.nombre}">Torneo</strong>,<br>
+               realizado el <span th:text="${#temporals.format(torneo.fecha, 'dd/MM/yyyy')}">fecha</span>
+               en <span th:text="${torneo.sede}">sede</span>.</p>
+            <div class="pie">Documento generado por el sistema GAJOG TKD</div>
+        </div>
+        <div class="acciones">
+            <button onclick="window.print()">Imprimir / guardar como PDF</button>
+            <a th:href="@{/torneos/{id}/resultados(id=${torneo.id})}">Volver</a>
+        </div>
+    </body>
+</html>

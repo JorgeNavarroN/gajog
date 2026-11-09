@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Panel de rompimiento', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .rp-grid { display: grid; grid-template-columns: 330px 1fr; gap: 18px; align-items: start; }
+                .rp-lista { max-height: 640px; overflow-y: auto; padding: 14px; }
+                .rp-cat { margin: 12px 0 6px; font-size: 10px; letter-spacing: 1.4px; color: #ff5067; font-weight: 800; }
+                .rp-comp { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; margin-bottom: 6px;
+                           padding: 11px 12px; border: 1px solid var(--borde); border-radius: 10px; background: var(--campo); color: var(--texto); cursor: pointer; text-align: left; }
+                .rp-comp:hover { background: #1b2430; }
+                .rp-comp.activo { border-color: var(--rojo); background: #2a121a; }
+                .rp-comp small { display: block; color: var(--secundario); font-size: 10px; margin-top: 3px; }
+                .rp-puntos { font-size: 18px; font-weight: 800; }
+                .rp-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+                .rp-total { text-align: right; }
+                .rp-total .num { font-size: 72px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; color: #ffd666; }
+                .rp-total small { color: var(--secundario); letter-spacing: 1px; font-size: 10px; }
+                .rp-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+                .rp-slot { padding: 12px; border: 1px dashed var(--borde); border-radius: 10px; min-height: 92px; font-size: 12px; }
+                .rp-slot.lleno { border-style: solid; background: var(--campo); }
+                .rp-slot .n { font-size: 10px; letter-spacing: 1.2px; color: var(--secundario); }
+                .rp-slot .p { font-size: 22px; font-weight: 800; margin-top: 4px; }
+                .rp-slot .limpio { color: #4ce3a1; font-size: 10px; font-weight: 800; }
+                .rp-form { border-top: 1px solid var(--borde); padding-top: 16px; }
+                .rp-tecnicas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-bottom: 14px; }
+                .rp-tec { padding: 11px; border: 1px solid var(--borde); border-radius: 8px; background: var(--campo); color: var(--texto); cursor: pointer; font-size: 12px; text-align: left; }
+                .rp-tec small { display: block; color: var(--secundario); margin-top: 3px; }
+                .rp-tec.activo { border-color: var(--rojo); background: #2a121a; }
+                .rp-numeros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+                .rp-num { width: 44px; height: 44px; border: 1px solid var(--borde); border-radius: 8px; background: var(--campo); color: var(--texto); font-size: 16px; font-weight: 800; cursor: pointer; }
+                .rp-num.activo { background: var(--rojo); border-color: var(--rojo); }
+                .rp-num:disabled { opacity: .3; cursor: not-allowed; }
+                .rp-etq { font-size: 11px; font-weight: 700; color: #c6d4e7; margin: 0 0 6px; }
+                .rp-preview { margin: 4px 0 14px; padding: 12px; border-radius: 10px; background: #123b2c; color: #4ce3a1; font-weight: 700; }
+                .rp-preview.vacio { background: var(--campo); color: var(--secundario); font-weight: 400; }
+                .rp-acciones { display: flex; gap: 10px; flex-wrap: wrap; }
+                .rp-aviso { margin-top: 12px; padding: 12px; border-radius: 8px; background: #351923; color: #ffabb9; border: 1px solid #813343; display: none; }
+                .rp-tablero td, .rp-tablero th { padding: 10px 12px; }
+                @media (max-width: 900px) { .rp-grid { grid-template-columns: 1fr; } .rp-total .num { font-size: 52px; } }
+            </style>
+
+            <header class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">ROMPIMIENTO DE TABLAS · KYOKPA</div>
+                    <h1 class="titulo" th:text="${torneo.nombre}">Torneo</h1>
+                    <p class="descripcion">Cada competidor hace hasta 3 intentos. Puntos = tablas rotas × dificultad de la técnica. Si rompe todas las tablas, bonus de +0.5 por tabla.</p>
+                </div>
+                <a class="boton" th:href="@{/torneos/{id}(id=${torneo.id})}">Volver al torneo</a>
+            </header>
+
+            <div class="caja-categoria" role="status" th:if="${exito != null}" th:text="${exito}"></div>
+            <div class="errores-formulario" role="alert" th:if="${error != null}" th:text="${error}"></div>
+
+            <div class="rp-grid" id="rp" th:attr="data-torneo=${torneo.id},data-encurso=${enCurso}">
+
+                <div class="panel rp-lista" id="rp-lista"></div>
+
+                <div>
+                    <div class="panel" id="rp-detalle">
+                        <p class="descripcion" id="rp-vacio">Seleccione un competidor de la lista.</p>
+                        <div id="rp-contenido" style="display:none">
+                            <div class="rp-cabecera">
+                                <div>
+                                    <div class="etiqueta" id="rp-cat">CATEGORÍA</div>
+                                    <h2 style="margin:0;font-size:24px" id="rp-nombre">Competidor</h2>
+                                    <div class="descripcion" id="rp-rotas">0 tablas rotas</div>
+                                </div>
+                                <div class="rp-total"><div class="num" id="rp-total">0.00</div><small>PUNTAJE TOTAL</small></div>
+                            </div>
+
+                            <div class="rp-slots" id="rp-slots"></div>
+
+                            <div class="rp-form" id="rp-form">
+                                <p class="rp-etq">1. Técnica</p>
+                                <div class="rp-tecnicas">
+                                    <button type="button" class="rp-tec" th:each="t : ${tecnicas}"
+                                            th:attr="data-tec=${t.name()},data-coef=${t.coeficiente}">
+                                        <span th:text="${t.etiqueta}">Técnica</span>
+                                        <small th:text="${'Dificultad × ' + t.coeficiente}">× 1.0</small>
+                                    </button>
+                                </div>
+                                <p class="rp-etq">2. Tablas intentadas</p>
+                                <div class="rp-numeros" id="rp-intentadas"></div>
+                                <p class="rp-etq">3. Tablas rotas</p>
+                                <div class="rp-numeros" id="rp-rotas-btns"></div>
+                                <div class="rp-preview vacio" id="rp-preview">Elija técnica y tablas para ver los puntos.</div>
+                                <div class="rp-acciones">
+                                    <button type="button" class="boton boton-primario" id="rp-registrar">Registrar intento</button>
+                                    <button type="button" class="boton" id="rp-deshacer">↶ Deshacer último intento</button>
+                                </div>
+                                <div class="rp-aviso" id="rp-aviso"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 style="margin:24px 0 10px;font-size:16px">Tablero de posiciones</h2>
+                    <div class="panel tabla-contenedor rp-tablero">
+                        <table class="tabla" style="min-width:0">
+                            <thead><tr><th>#</th><th>Competidor</th><th>Categoría</th><th>Tablas rotas</th><th>Puntos</th></tr></thead>
+                            <tbody id="rp-tablero"></tbody>
+                        </table>
+                    </div>
+
+                    <form method="post" th:if="${enCurso}" th:action="@{/torneos/{id}/rompimiento/cerrar(id=${torneo.id})}" style="margin-top:18px">
+                        <button type="submit" class="boton boton-primario">Finalizar competencia y asignar medallas</button>
+                    </form>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                (function () {
+                    var torneoId = /*[[${torneo.id}]]*/ 1;
+                    var base = /*[[@{/torneos/}]]*/ '/torneos/';
+                    var enCurso = /*[[${enCurso}]]*/ true;
+                    var MAX_TABLAS = 10;
+                    var datos = [];
+                    var seleccionado = null;
+                    var tecnica = null, coef = 0, intentadas = 0, rotas = null;
+
+                    var $ = function (id) { return document.getElementById(id); };
+                    function fmt(n) { return Number(n).toFixed(2); }
+
+                    function aviso(t) {
+                        var a = $('rp-aviso');
+                        a.textContent = t || '';
+                        a.style.display = t ? 'block' : 'none';
+                    }
+
+                    function actual() {
+                        for (var i = 0; i < datos.length; i++) { if (datos[i].inscripcionId === seleccionado) { return datos[i]; } }
+                        return null;
+                    }
+
+                    function pintarLista() {
+                        var cont = $('rp-lista');
+                        cont.innerHTML = '';
+                        var ultimaCat = null;
+                        datos.forEach(function (d) {
+                            if (d.categoria !== ultimaCat) {
+                                var h = document.createElement('div');
+                                h.className = 'rp-cat';
+                                h.textContent = d.categoria.toUpperCase();
+                                cont.appendChild(h);
+                                ultimaCat = d.categoria;
+                            }
+                            var b = document.createElement('button');
+                            b.type = 'button';
+                            b.className = 'rp-comp' + (d.inscripcionId === seleccionado ? ' activo' : '');
+                            b.innerHTML = '<span>' + d.nombre + '<small>' + d.intentos.length + ' de 3 intentos</small></span>' +
+                                          '<span class="rp-puntos">' + fmt(d.total) + '</span>';
+                            b.addEventListener('click', function () { seleccionado = d.inscripcionId; resetForm(); pintar(); });
+                            cont.appendChild(b);
+                        });
+                    }
+
+                    function pintarTablero() {
+                        var filas = datos.slice().sort(function (a, b) {
+                            if (a.categoria !== b.categoria) { return a.categoria < b.categoria ? -1 : 1; }
+                            if (b.total !== a.total) { return b.total - a.total; }
+                            return b.tablasRotas - a.tablasRotas;
+                        });
+                        var html = '';
+                        var pos = 0, cat = null;
+                        filas.forEach(function (d) {
+                            if (d.categoria !== cat) { cat = d.categoria; pos = 0; }
+                            pos++;
+                            html += '<tr><td>' + pos + '</td><td>' + d.nombre + '</td><td>' + d.categoria + '</td><td>' + d.tablasRotas + '</td><td><strong>' + fmt(d.total) + '</strong></td></tr>';
+                        });
+                        $('rp-tablero').innerHTML = html || '<tr><td colspan="5">Sin competidores.</td></tr>';
+                    }
+
+                    function pintarDetalle() {
+                        var d = actual();
+                        $('rp-vacio').style.display = d ? 'none' : 'block';
+                        $('rp-contenido').style.display = d ? 'block' : 'none';
+                        if (!d) { return; }
+                        $('rp-cat').textContent = d.categoria.toUpperCase();
+                        $('rp-nombre').textContent = d.nombre;
+                        $('rp-rotas').textContent = d.tablasRotas + ' tablas rotas en total';
+                        $('rp-total').textContent = fmt(d.total);
+
+                        var slots = '';
+                        for (var n = 1; n <= 3; n++) {
+                            var it = d.intentos[n - 1];
+                            if (it) {
+                                slots += '<div class="rp-slot lleno"><div class="n">INTENTO ' + n + '</div>' + it.tecnica +
+                                    '<div>' + it.tablasRotas + ' de ' + it.tablasIntentadas + ' tablas ' + (it.limpio ? '<span class="limpio">· LIMPIO</span>' : '') + '</div>' +
+                                    '<div class="p">+' + fmt(it.puntos) + '</div></div>';
+                            } else {
+                                slots += '<div class="rp-slot"><div class="n">INTENTO ' + n + '</div><span style="color:var(--secundario)">Pendiente</span></div>';
+                            }
+                        }
+                        $('rp-slots').innerHTML = slots;
+
+                        var puedeRegistrar = enCurso && d.intentosRestantes > 0;
+                        $('rp-form').style.display = enCurso ? 'block' : 'none';
+                        $('rp-registrar').disabled = !puedeRegistrar;
+                        $('rp-deshacer').disabled = !(enCurso && d.intentos.length > 0);
+                    }
+
+                    function pintarNumeros() {
+                        var a = $('rp-intentadas'), r = $('rp-rotas-btns');
+                        a.innerHTML = ''; r.innerHTML = '';
+                        for (var n = 1; n <= MAX_TABLAS; n++) {
+                            (function (n) {
+                                var b = document.createElement('button');
+                                b.type = 'button'; b.className = 'rp-num' + (intentadas === n ? ' activo' : ''); b.textContent = n;
+                                b.addEventListener('click', function () { intentadas = n; if (rotas !== null && rotas > n) { rotas = n; } pintarNumeros(); preview(); });
+                                a.appendChild(b);
+                            })(n);
+                        }
+                        for (var k = 0; k <= MAX_TABLAS; k++) {
+                            (function (k) {
+                                var b = document.createElement('button');
+                                b.type = 'button'; b.className = 'rp-num' + (rotas === k ? ' activo' : ''); b.textContent = k;
+                                b.disabled = intentadas === 0 || k > intentadas;
+                                b.addEventListener('click', function () { rotas = k; pintarNumeros(); preview(); });
+                                r.appendChild(b);
+                            })(k);
+                        }
+                    }
+
+                    function preview() {
+                        var p = $('rp-preview');
+                        if (!tecnica || intentadas < 1 || rotas === null) {
+                            p.className = 'rp-preview vacio';
+                            p.textContent = 'Elija técnica y tablas para ver los puntos.';
+                            return;
+                        }
+                        var puntos = coef * rotas;
+                        var limpio = rotas === intentadas;
+                        if (limpio) { puntos += 0.5 * intentadas; }
+                        p.className = 'rp-preview';
+                        p.textContent = rotas + ' × ' + coef.toFixed(1) + (limpio ? ' + bonus limpio ' + (0.5 * intentadas).toFixed(1) : '') + ' = ' + puntos.toFixed(2) + ' puntos';
+                    }
+
+                    function resetForm() {
+                        tecnica = null; coef = 0; intentadas = 0; rotas = null;
+                        document.querySelectorAll('.rp-tec').forEach(function (b) { b.classList.remove('activo'); });
+                        aviso('');
+                        pintarNumeros();
+                        preview();
+                    }
+
+                    function pintar() { pintarLista(); pintarDetalle(); pintarTablero(); }
+
+                    function reemplazar(d) {
+                        for (var i = 0; i < datos.length; i++) { if (datos[i].inscripcionId === d.inscripcionId) { datos[i] = d; } }
+                        pintar();
+                    }
+
+                    function post(ruta, params) {
+                        return fetch(base + torneoId + '/rompimiento/' + seleccionado + ruta, { method: 'POST', body: new URLSearchParams(params || {}) })
+                            .then(function (r) { return r.json().then(function (j) { if (!r.ok) { throw new Error(j.error || 'Error'); } return j; }); });
+                    }
+
+                    document.querySelectorAll('.rp-tec').forEach(function (b) {
+                        b.addEventListener('click', function () {
+                            document.querySelectorAll('.rp-tec').forEach(function (x) { x.classList.remove('activo'); });
+                            b.classList.add('activo');
+                            tecnica = b.getAttribute('data-tec');
+                            coef = parseFloat(b.getAttribute('data-coef'));
+                            preview();
+                        });
+                    });
+
+                    $('rp-registrar').addEventListener('click', function () {
+                        if (!tecnica || intentadas < 1 || rotas === null) { aviso('Complete técnica, tablas intentadas y tablas rotas.'); return; }
+                        post('/intento', { tecnica: tecnica, intentadas: intentadas, rotas: rotas })
+                            .then(function (d) { reemplazar(d); resetForm(); })
+                            .catch(function (e) { aviso(e.message); });
+                    });
+                    $('rp-deshacer').addEventListener('click', function () {
+                        post('/deshacer').then(reemplazar).catch(function (e) { aviso(e.message); });
+                    });
+
+                    pintarNumeros();
+                    fetch(base + torneoId + '/rompimiento/estado')
+                        .then(function (r) { return r.json(); })
+                        .then(function (lista) { datos = lista; if (datos.length) { seleccionado = datos[0].inscripcionId; } pintar(); })
+                        .catch(function () { aviso('No se pudo cargar los competidores.'); });
+                })();
+            </script>
+
+        </section>
+    </body>
+</html>

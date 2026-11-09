@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Ranking de medallas', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .t-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+                .t-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                .t-tabla-ancho { min-width: 0 !important; }
+                .t-medalla-1 { background:#4a3b12; color:#ffd666; }
+                .t-medalla-2 { background:#2c3440; color:#d5dde8; }
+                .t-medalla-3 { background:#4a2c1a; color:#e8a66f; }
+                a.boton { text-decoration: none; }
+                .t-sub { margin: 28px 0 12px; font-size: 16px; }
+            </style>
+
+            <header class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">ACADEMIA</div>
+                    <h1 class="titulo">Ranking de medallas</h1>
+                    <p class="descripcion">Oro = 5 puntos, plata = 3, bronce = 1. Suma de todos los torneos.</p>
+                </div>
+                <a class="boton" th:href="@{/torneos}">Volver</a>
+            </header>
+
+            <div class="tabla-contenedor panel">
+                <table class="tabla t-tabla-ancho">
+                    <thead><tr><th>#</th><th>Alumno</th><th>Oros</th><th>Platas</th><th>Bronces</th><th>Puntos</th></tr></thead>
+                    <tbody>
+                        <tr th:each="f : ${filas}">
+                            <td th:text="${f.posicion}">1</td>
+                            <td th:text="${f.alumno}">Alumno</td>
+                            <td th:text="${f.oros}">0</td>
+                            <td th:text="${f.platas}">0</td>
+                            <td th:text="${f.bronces}">0</td>
+                            <td><strong th:text="${f.puntos}">0</strong></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(filas)}"><td colspan="6">Aún no hay medallas registradas.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+    </body>
+</html>
