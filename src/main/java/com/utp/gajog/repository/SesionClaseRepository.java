@@ -30,8 +30,10 @@ public interface SesionClaseRepository extends JpaRepository<SesionClase, Long> 
             Long grupoId,
             LocalDate fecha);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM SesionClase s WHERE s.id = :id")
+    @Query(
+            value = "SELECT * FROM sesiones_clase WHERE id = :id FOR UPDATE",
+            nativeQuery = true
+    )
     Optional<SesionClase> findByIdConBloqueo(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {

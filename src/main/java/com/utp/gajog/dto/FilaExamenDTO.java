@@ -3,10 +3,7 @@ package com.utp.gajog.dto;
 import com.utp.gajog.model.Alumno;
 import com.utp.gajog.model.Examen;
 
-/**
- * BASE COMPARTIDA del módulo de exámenes (BPMN 3).
- * Una fila de la lista "Alumnos matriculados" de la pantalla de exámenes.
- */
+
 public class FilaExamenDTO {
 
     private final Alumno alumno;

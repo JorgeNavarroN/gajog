@@ -3,11 +3,7 @@
 
     <body>
 
-        <!--
-          MITAD B del BPMN 3 - Pestaña "2. Evaluación"
-          Carril Instructor: "Evalúa combate, formas y rompimiento" y
-                             "Registra resultado y observaciones" (CU16, CU17)
-        -->
+
         <div th:fragment="panel">
 
             <!-- No hay un examen en curso -->
@@ -24,7 +20,7 @@
                 ← Ir al pago
             </a>
 
-            <!-- Rombo "¿Pago registrado?" = No -->
+
             <th:block th:if="${examenPendiente and !pagado}">
                 <div class="aviso aviso-alerta">
                     <strong>Pago pendiente</strong>
@@ -38,7 +34,7 @@
                 </a>
             </th:block>
 
-            <!-- Rombo "¿Pago registrado?" = Sí -->
+
             <th:block th:if="${examenPendiente and pagado}">
 
                 <div class="aviso aviso-ok">

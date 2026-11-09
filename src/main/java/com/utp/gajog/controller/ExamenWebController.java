@@ -18,11 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * BASE COMPARTIDA del módulo de exámenes (BPMN 3).
- * Muestra la pantalla "Exámenes de cinturón" con sus 3 pestañas:
- * 1. Pago (mitad A), 2. Evaluación (mitad B) y 3. Resultado (mitad B).
- */
+
 @Controller
 @RequestMapping("/examenes")
 public class ExamenWebController {
@@ -74,7 +70,7 @@ public class ExamenWebController {
         model.addAttribute("pagado", pagado);
         model.addAttribute("estadoExamen", fila.get().getEstado());
 
-        // Mitad A: datos del pago.
+
         model.addAttribute("tarifaExamen", pagoService.tarifaExamen());
         model.addAttribute("hoy", LocalDate.now(ZONA));
         model.addAttribute("requisitos",
@@ -86,7 +82,7 @@ public class ExamenWebController {
                         ? pagoService.pagoDelExamen(examen.getId()).orElse(null)
                         : null);
 
-        // Mitad B: criterios, detalle del último examen e historial.
+
         model.addAttribute("criterios", evaluacionService.listarCriterios());
         model.addAttribute("puntajeMinimo", evaluacionService.getPuntajeMinimo());
         model.addAttribute("puntajeMaximoTotal",
@@ -105,7 +101,7 @@ public class ExamenWebController {
         return "examenes";
     }
 
-    /** Pestaña inicial según el punto del BPMN en el que está el alumno. */
+
     private String resolverPestana(
             String solicitada,
             Examen examen,

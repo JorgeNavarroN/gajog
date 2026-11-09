@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Nuevo grupo', 'horarios', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido" class="registro">
+
+            <style>
+                .grupo-horarios {
+                    max-height: 280px;
+                    overflow-y: auto;
+                    margin: 16px 0;
+                }
+
+                .grupo-horario {
+                    display: grid;
+                    grid-template-columns: 1.2fr 1fr 1fr auto;
+                    gap: 12px;
+                    align-items: end;
+                    padding: 12px 0;
+                    border-bottom: 1px solid #293343;
+                }
+
+                .grupo-horario .campo {
+                    min-width: 0;
+                }
+
+                .grupo-horario input,
+                .grupo-horario select {
+                    width: 100%;
+                    min-width: 0;
+                }
+
+                .grupo-horario .boton {
+                    min-height: 40px;
+                }
+
+                @media (max-width: 600px) {
+                    .grupo-horario {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                }
+            </style>
+
+            <p class="descripcion">GESTIÓN / GRUPOS Y HORARIOS</p>
+            <h1>Nuevo grupo</h1>
+
+            <p class="descripcion">
+                Asigna una categoría, un instructor y sus clases semanales.
+            </p>
+
+            <form class="panel"
+                  id="formulario-grupo"
+                  method="post"
+                  th:action="@{/horarios}"
+                  th:object="${grupoForm}">
+
+                <div class="errores-formulario"
+                     role="alert"
+                     th:if="${error != null}"
+                     th:text="${error}">
+                </div>
+
+                <div class="grilla-dos">
+                    <div class="campo">
+                        <label for="nombre">Nombre del grupo *</label>
+                        <input type="text"
+                               id="nombre"
+                               th:field="*{nombre}"
+                               maxlength="100"
+                               required
+                               placeholder="Ej. Juvenil D">
+                    </div>
+
+                    <div class="campo">
+                        <label for="categoriaId">Categoría *</label>
+                        <select id="categoriaId"
+                                th:field="*{categoriaId}"
+                                required>
+                            <option value="">Seleccionar categoría</option>
+                            <option th:each="categoria : ${categorias}"
+                                    th:value="${categoria.id}"
+                                    th:text="${categoria.nombre}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label for="instructorId">Instructor *</label>
+                        <select id="instructorId"
+                                th:field="*{instructorId}"
+                                required>
+                            <option value="">Seleccionar instructor</option>
+                            <option th:each="instructor : ${instructores}"
+                                    th:value="${instructor.id}"
+                                    th:text="${instructor.persona.apellidos
+                                    + ', ' + instructor.persona.nombres}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label for="cupoMaximo">Cupo máximo *</label>
+                        <input type="number"
+                               id="cupoMaximo"
+                               th:field="*{cupoMaximo}"
+                               min="1"
+                               max="2147483647"
+                               step="1"
+                               required>
+                    </div>
+                </div>
+
+                <hr class="separador">
+
+                <h2>Clases semanales</h2>
+
+                <p class="descripcion">
+                    Agrega una fila por día y franja horaria.
+                </p>
+
+                <div id="filas-horarios" class="grupo-horarios">
+                    <div class="grupo-horario"
+                         th:each="horario, fila : *{horarios}">
+
+                        <div class="campo">
+                            <label th:for="${'dia-' + fila.index}">Día *</label>
+                            <select th:id="${'dia-' + fila.index}"
+                                    data-campo="diaSemana"
+                                    th:field="*{horarios[__${fila.index}__].diaSemana}"
+                                    required>
+                                <option value="">Seleccionar día</option>
+                                <option th:each="dia : ${dias}"
+                                        th:value="${dia}"
+                                        th:text="${dia}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label th:for="${'inicio-' + fila.index}">Inicio *</label>
+                            <input type="time"
+                                   th:id="${'inicio-' + fila.index}"
+                                   data-campo="horaInicio"
+                                   th:field="*{horarios[__${fila.index}__].horaInicio}"
+                                   step="60"
+                                   required>
+                        </div>
+
+                        <div class="campo">
+                            <label th:for="${'fin-' + fila.index}">Fin *</label>
+                            <input type="time"
+                                   th:id="${'fin-' + fila.index}"
+                                   data-campo="horaFin"
+                                   th:field="*{horarios[__${fila.index}__].horaFin}"
+                                   step="60"
+                                   required>
+                        </div>
+
+                        <button type="button"
+                                class="boton"
+                                data-quitar>
+                            Quitar
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" class="boton" id="agregar-horario">
+                    + Agregar horario
+                </button>
+
+                <div class="acciones-formulario" style="margin-top: 24px;">
+                    <a class="boton" th:href="@{/horarios}">
+                        Cancelar
+                    </a>
+
+                    <button type="submit"
+                            class="boton boton-primario"
+                            th:disabled="${#lists.isEmpty(categorias)
+                            or #lists.isEmpty(instructores)}">
+                        Crear grupo
+                    </button>
+                </div>
+            </form>
+
+            <script>
+                (() => {
+                const contenedor = document.getElementById("filas-horarios");
+                const agregar = document.getElementById("agregar-horario");
+                const formulario = document.getElementById("formulario-grupo");
+                const plantilla = contenedor.querySelector(".grupo-horario")
+                .cloneNode(true);
+
+                function reindexar() {
+                const filas = [...contenedor.querySelectorAll(".grupo-horario")];
+
+                filas.forEach((fila, indice) => {
+                fila.querySelectorAll("[data-campo]").forEach(campo => {
+                campo.name = `horarios[${indice}].${campo.dataset.campo}`;
+                campo.id = `horario-${indice}-${campo.dataset.campo}`;
+
+                campo.closest(".campo").querySelector("label")
+                .htmlFor = campo.id;
+                });
+
+                fila.querySelector("[data-quitar]").disabled =
+                filas.length === 1;
+                });
+
+                agregar.disabled = filas.length >= 21;
+                }
+
+                agregar.addEventListener("click", () => {
+                if (contenedor.children.length >= 21) return;
+
+                const fila = plantilla.cloneNode(true);
+
+                fila.querySelectorAll("input, select").forEach(campo => {
+                campo.value = "";
+                campo.querySelectorAll("option").forEach(opcion => {
+                opcion.selected = false;
+                opcion.removeAttribute("selected");
+                });
+                if (campo.tagName === "SELECT") campo.selectedIndex = 0;
+                });
+
+                contenedor.append(fila);
+                reindexar();
+
+                fila.querySelector("select").focus();
+                });
+
+                contenedor.addEventListener("click", evento => {
+                const boton = evento.target.closest("[data-quitar]");
+                if (!boton || contenedor.children.length <= 1) return;
+
+                boton.closest(".grupo-horario").remove();
+                reindexar();
+                });
+
+                formulario.addEventListener("submit", reindexar);
+                reindexar();
+                })();
+            </script>
+
+        </section>
+    </body>
+</html>

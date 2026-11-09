@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+    <body>
+
+
+        <div th:fragment="panel">
+
+            <!-- Indicadores del expediente (solo informativos) -->
+            <div class="indicadores">
+
+                <div class="indicador"
+                     th:classappend="${requisitos.cumpleAsistencia ? 'cumple' : 'falta'}">
+                    Asistencia (mínimo 75 %)
+                    <strong th:text="${requisitos.asistenciaPorcentaje + ' %'}">
+                        0 %
+                    </strong>
+                </div>
+
+                <div class="indicador"
+                     th:classappend="${requisitos.cumpleAntiguedad ? 'cumple' : 'falta'}">
+                    Antigüedad (mínimo 3 meses)
+                    <strong th:text="${requisitos.mesesAntiguedad
+                            + (requisitos.mesesAntiguedad == 1 ? ' mes' : ' meses')}">
+                        0 meses
+                    </strong>
+                </div>
+
+                <div class="indicador">
+                    Cinturón al que aspira
+                    <strong th:text="${proximoCinturon != null
+                            ? proximoCinturon.nombre : 'Ya tiene el máximo'}">
+                        Amarillo
+                    </strong>
+                </div>
+
+            </div>
+
+            <div class="aviso aviso-alerta"
+                 th:if="${!requisitos.cumpleAsistencia
+                 or !requisitos.cumpleAntiguedad}">
+                <strong>Revisa los requisitos</strong>
+                El alumno aún no alcanza la asistencia o la antigüedad
+                mínima. Es una advertencia: igual puedes registrar el pago
+                si el instructor lo autoriza.
+            </div>
+
+            <!-- Ya existe un pago registrado para el examen pendiente -->
+            <div class="aviso aviso-ok"
+                 th:if="${pagoExamen != null}">
+                <strong>Pago del examen registrado</strong>
+                <span th:text="${'S/ ' + #numbers.formatDecimal(pagoExamen.monto, 1, 2)
+                      + ' · ' + #temporals.format(pagoExamen.fechaPago, 'dd/MM/yyyy')
+                      + ' · ' + pagoExamen.medioPago}">
+                    S/ 80.00 · 29/09/2026 · EFECTIVO
+                </span>
+            </div>
+
+            <a class="boton boton-primario"
+               th:if="${pagoExamen != null}"
+               th:href="@{/examenes(alumno=${seleccionado.id}, tab='evaluacion')}">
+                Ir a la evaluación →
+            </a>
+
+            <!-- Sin examen en curso y ya en el cinturón máximo -->
+            <div class="aviso aviso-info"
+                 th:if="${pagoExamen == null and proximoCinturon == null}">
+                <strong>Sin exámenes disponibles</strong>
+                Este alumno ya tiene el cinturón más alto de la escala
+                o todavía no tiene un cinturón actual registrado.
+            </div>
+
+            <!-- Formulario de cobro -->
+            <form th:if="${pagoExamen == null and proximoCinturon != null}"
+                  th:action="@{/examenes/{id}/pago(id=${seleccionado.id})}"
+                  method="post">
+
+                <div class="aviso aviso-alerta"
+                     th:if="${examenPendiente}">
+                    <strong>Pago pendiente</strong>
+                    Registra el pago para habilitar la evaluación
+                    del instructor.
+                </div>
+
+                <div class="grilla-tres">
+
+                    <div class="campo">
+                        <label for="monto">Monto recibido (S/) *</label>
+                        <input id="monto"
+                               name="monto"
+                               type="number"
+                               step="0.01"
+                               min="0.01"
+                               required
+                               th:value="${tarifaExamen}">
+                    </div>
+
+                    <div class="campo">
+                        <label for="fechaPago">Fecha de pago *</label>
+                        <input id="fechaPago"
+                               name="fechaPago"
+                               type="date"
+                               required
+                               th:max="${hoy}"
+                               th:value="${hoy}">
+                    </div>
+
+                    <div class="campo">
+                        <label for="medioPago">Medio de pago *</label>
+                        <select id="medioPago" name="medioPago" required>
+                            <option th:each="medio : ${mediosPago}"
+                                    th:value="${medio}"
+                                    th:text="${medio}">EFECTIVO</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="acciones-formulario"
+                     style="justify-content: flex-end">
+                    <button type="submit" class="boton boton-primario">
+                        Registrar pago del examen →
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </body>
+</html>

@@ -11,14 +11,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * BASE COMPARTIDA del módulo de exámenes (BPMN 3).
- *
- * Al arrancar, deja listos los datos que el examen necesita y que el
- * manual de instalación no carga: los criterios de evaluación (CU17) y
- * la escala de cinturones (Blanco, Amarillo, Verde, Azul, Rojo, Negro).
- * Es idempotente: solo inserta lo que falta, nunca modifica lo existente.
- */
+
 @Component
 public class ExamenDatosIniciales implements ApplicationRunner {
 

@@ -13,6 +13,7 @@ import com.utp.gajog.repository.CategoriaRepository;
 import com.utp.gajog.service.CategoriaService;
 import com.utp.gajog.service.GrupoService;
 import com.utp.gajog.service.RegistroMatriculaService;
+import com.utp.gajog.enums.MedioPago;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
@@ -186,6 +187,16 @@ public class RegistroMatriculaController {
         model.addAttribute("categoriaAsignada", categoria);
         model.addAttribute("gruposDisponibles", grupos);
 
+        formulario.setImporteMatricula(null);
+
+        try {
+            formulario.setImporteMatricula(
+                    registroMatriculaService.consultarImporteMatricula());
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            model.addAttribute("errorConfirmacion", e.getMessage());
+        }
+
         return "matriculas/paso-3";
     }
 
@@ -196,6 +207,8 @@ public class RegistroMatriculaController {
                     binding = false
             ) RegistroMatriculaForm formulario,
             @RequestParam(name = "grupoId", required = false) Long grupoId,
+            @RequestParam(name = "medioPago", defaultValue = "") String medioPagoTexto,
+            @RequestParam(name = "pagoRecibido", defaultValue = "false") boolean pagoRecibido,
             SessionStatus sessionStatus,
             RedirectAttributes redirectAttributes) {
 
@@ -206,17 +219,28 @@ public class RegistroMatriculaController {
         formulario.setGrupoId(grupoId);
 
         try {
-            Matricula matricula = registroMatriculaService
-                    .confirmar(formulario, grupoId);
+            MedioPago medioPago;
+
+            try {
+                medioPago = MedioPago.valueOf(medioPagoTexto);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        "Selecciona un medio de pago válido.");
+            }
+
+            Matricula matricula = registroMatriculaService.confirmar(
+                    formulario,
+                    grupoId,
+                    medioPago,
+                    pagoRecibido);
 
             sessionStatus.setComplete();
 
             redirectAttributes.addFlashAttribute(
                     "exito",
                     "Matrícula N.º " + matricula.getId()
-                    + " registrada sin pago de matrícula. "
-                    + "La primera mensualidad quedó pendiente."
-            );
+                    + " y pago de matrícula registrados correctamente. "
+                    + "La primera mensualidad quedó pendiente.");
 
             return "redirect:/matriculas";
 

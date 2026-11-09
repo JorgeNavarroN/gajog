@@ -3,11 +3,7 @@
 
     <body>
 
-        <!--
-          MITAD B del BPMN 3 - Pestaña "3. Resultado"
-          Carril Sistema web: "Actualiza cinturón e historial de ascensos"
-          Carril Alumno / padre: "Consulta resultado y progreso" (CU18)
-        -->
+
         <div th:fragment="panel">
 
             <div class="aviso aviso-info"
@@ -117,7 +113,7 @@
                 </tbody>
             </table>
 
-            <!-- Todos los exámenes del alumno (CU18) -->
+
             <h3 class="subtitulo">Exámenes rendidos</h3>
 
             <p class="descripcion" th:if="${examenesAlumno.isEmpty()}">

@@ -13,10 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * MITAD B del BPMN 3: el Instructor evalúa y registra el resultado
- * (CU16 y CU17). Si aprueba, el sistema actualiza el cinturón.
- */
+
 @Controller
 @RequestMapping("/examenes")
 public class ExamenEvaluacionController {

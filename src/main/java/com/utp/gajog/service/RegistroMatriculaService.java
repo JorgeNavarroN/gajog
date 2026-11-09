@@ -7,23 +7,30 @@ package com.utp.gajog.service;
 import com.utp.gajog.dto.RegistroMatriculaForm;
 import com.utp.gajog.enums.EstadoAlumno;
 import com.utp.gajog.enums.EstadoMensualidad;
+import com.utp.gajog.enums.EstadoPago;
+import com.utp.gajog.enums.MedioPago;
 import com.utp.gajog.enums.TipoPago;
 import com.utp.gajog.model.Alumno;
 import com.utp.gajog.model.Apoderado;
 import com.utp.gajog.model.Cinturon;
 import com.utp.gajog.model.Matricula;
 import com.utp.gajog.model.Mensualidad;
+import com.utp.gajog.model.Pago;
 import com.utp.gajog.model.Persona;
 import com.utp.gajog.model.Tarifa;
 import com.utp.gajog.repository.AlumnoRepository;
 import com.utp.gajog.repository.ApoderadoRepository;
 import com.utp.gajog.repository.CinturonRepository;
 import com.utp.gajog.repository.MensualidadRepository;
+import com.utp.gajog.repository.PagoRepository;
 import com.utp.gajog.repository.PersonaRepository;
 import com.utp.gajog.repository.TarifaRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.temporal.TemporalAdjusters;
+import java.time.ZoneId;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -43,6 +50,7 @@ public class RegistroMatriculaService {
     private final TarifaRepository tarifaRepository;
     private final MensualidadRepository mensualidadRepository;
     private final MatriculaService matriculaService;
+    private final PagoRepository pagoRepository;
 
     public RegistroMatriculaService(
             PersonaRepository personaRepository,
@@ -51,7 +59,8 @@ public class RegistroMatriculaService {
             CinturonRepository cinturonRepository,
             TarifaRepository tarifaRepository,
             MensualidadRepository mensualidadRepository,
-            MatriculaService matriculaService) {
+            MatriculaService matriculaService,
+            PagoRepository pagoRepository) {
 
         this.personaRepository = personaRepository;
         this.alumnoRepository = alumnoRepository;
@@ -60,14 +69,27 @@ public class RegistroMatriculaService {
         this.tarifaRepository = tarifaRepository;
         this.mensualidadRepository = mensualidadRepository;
         this.matriculaService = matriculaService;
+        this.pagoRepository = pagoRepository;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Matricula confirmar(
             RegistroMatriculaForm formulario,
-            Long grupoId) {
+            Long grupoId,
+            MedioPago medioPago,
+            boolean pagoRecibido) {
 
         validarFormulario(formulario);
+
+        if (medioPago == null) {
+            throw new IllegalArgumentException(
+                    "Selecciona el medio de pago.");
+        }
+
+        if (!pagoRecibido) {
+            throw new IllegalArgumentException(
+                    "Confirma que recibiste el pago de matrícula.");
+        }
 
         if (grupoId == null) {
             throw new IllegalArgumentException(
@@ -81,7 +103,7 @@ public class RegistroMatriculaService {
                     "Ya existe un alumno con ese DNI.");
         }
 
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = LocalDate.now(ZoneId.of("America/Lima"));
 
         Cinturon cinturon = cinturonRepository
                 .findByNombreIgnoreCase("Blanco")
@@ -90,6 +112,18 @@ public class RegistroMatriculaService {
                                 "Configura el cinturón Blanco antes de registrar alumnos."));
 
         Tarifa tarifa = obtenerTarifaMensual(hoy);
+
+        Tarifa tarifaMatricula = obtenerTarifaVigente(
+                TipoPago.MATRICULA, hoy);
+
+        if (formulario.getImporteMatricula() == null
+                || formulario.getImporteMatricula()
+                        .compareTo(tarifaMatricula.getMonto()) != 0) {
+
+            throw new IllegalStateException(
+                    "El importe de matrícula cambió. "
+                    + "Revisa el importe actualizado y confirma nuevamente.");
+        }
 
         // Persona del alumno.
         Persona persona = obtenerPersona(
@@ -175,6 +209,18 @@ public class RegistroMatriculaService {
 
         mensualidadRepository.save(mensualidad);
 
+        Pago pago = new Pago();
+        pago.setAlumno(alumno);
+        pago.setMatricula(matricula);
+        pago.setTipoPago(TipoPago.MATRICULA);
+        pago.setMonto(tarifaMatricula.getMonto());
+        pago.setMedioPago(medioPago);
+        pago.setFechaPago(
+                LocalDateTime.now(ZoneId.of("America/Lima")));
+        pago.setEstado(EstadoPago.REGISTRADO);
+
+        pagoRepository.save(pago);
+
         return matricula;
     }
 
@@ -212,28 +258,42 @@ public class RegistroMatriculaService {
         return personaRepository.save(nueva);
     }
 
+    @Transactional(readOnly = true)
+    public BigDecimal consultarImporteMatricula() {
+        return obtenerTarifaVigente(
+                TipoPago.MATRICULA,
+                LocalDate.now(ZoneId.of("America/Lima"))
+        ).getMonto();
+    }
+
     private Tarifa obtenerTarifaMensual(LocalDate fecha) {
+        return obtenerTarifaVigente(TipoPago.MENSUALIDAD, fecha);
+    }
+
+    private Tarifa obtenerTarifaVigente(
+            TipoPago tipo,
+            LocalDate fecha) {
 
         List<Tarifa> vigentes = tarifaRepository
-                .findByTipoPagoAndActivoTrue(TipoPago.MENSUALIDAD)
+                .findByTipoPagoAndActivoTrue(tipo)
                 .stream()
-                .filter(tarifa
-                        -> !tarifa.getFechaInicio().isAfter(fecha))
-                .filter(tarifa
-                        -> tarifa.getFechaFin() == null
-                        || !tarifa.getFechaFin().isBefore(fecha))
+                .filter(t -> !t.getFechaInicio().isAfter(fecha))
+                .filter(t -> t.getFechaFin() == null
+                        || !t.getFechaFin().isBefore(fecha))
                 .toList();
 
         if (vigentes.size() != 1) {
             throw new IllegalStateException(
-                    "Debe existir exactamente una tarifa mensual vigente.");
+                    "Debe existir exactamente una tarifa vigente de "
+                    + tipo + ".");
         }
 
         Tarifa tarifa = vigentes.get(0);
 
-        if (tarifa.getMonto().signum() <= 0) {
+        if (tarifa.getMonto() == null
+                || tarifa.getMonto().signum() <= 0) {
             throw new IllegalStateException(
-                    "La tarifa mensual debe tener un monto positivo.");
+                    "La tarifa de " + tipo + " debe ser positiva.");
         }
 
         return tarifa;

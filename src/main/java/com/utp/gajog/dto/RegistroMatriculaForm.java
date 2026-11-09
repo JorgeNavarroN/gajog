@@ -5,6 +5,7 @@
 package com.utp.gajog.dto;
 
 import com.utp.gajog.enums.Parentesco;
+import java.math.BigDecimal;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
@@ -33,6 +34,8 @@ public class RegistroMatriculaForm {
     private Long categoriaId;
 
     private Long grupoId;
+
+    private BigDecimal importeMatricula;
 
     public RegistroMatriculaForm() {
     }
@@ -131,6 +134,14 @@ public class RegistroMatriculaForm {
 
     public void setApoderadoApellidos(String apoderadoApellidos) {
         this.apoderadoApellidos = apoderadoApellidos;
+    }
+
+    public BigDecimal getImporteMatricula() {
+        return importeMatricula;
+    }
+
+    public void setImporteMatricula(BigDecimal importeMatricula) {
+        this.importeMatricula = importeMatricula;
     }
 
 }

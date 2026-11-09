@@ -2,11 +2,7 @@ package com.utp.gajog.config;
 
 import org.springframework.stereotype.Component;
 
-/**
- * BASE COMPARTIDA del módulo de exámenes (BPMN 3).
- * Colores para mostrar la insignia del cinturón en las pantallas.
- * Se usa desde Thymeleaf como ${@coloresCinturon.fondo(color)}.
- */
+
 @Component("coloresCinturon")
 public class ColoresCinturon {
 

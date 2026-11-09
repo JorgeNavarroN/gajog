@@ -17,10 +17,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * BASE COMPARTIDA del módulo de exámenes (BPMN 3).
- * Arma la lista de alumnos y consulta exámenes (CU18).
- */
+
 @Service
 public class ExamenConsultaService {
 
@@ -78,7 +75,7 @@ public class ExamenConsultaService {
         return examenRepository.findFirstByAlumno_IdOrderByIdDesc(alumnoId);
     }
 
-    /** CU18: exámenes del alumno, del más reciente al más antiguo. */
+
     @Transactional(readOnly = true)
     public List<Examen> listarExamenesDelAlumno(Long alumnoId) {
         return examenRepository.findByAlumno_IdOrderByIdDesc(alumnoId);

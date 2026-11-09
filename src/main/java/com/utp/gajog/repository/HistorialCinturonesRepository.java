@@ -5,9 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/**
- * BASE COMPARTIDA del módulo de exámenes (BPMN 3).
- */
+
 public interface HistorialCinturonesRepository
         extends JpaRepository<HistorialCinturones, Long> {
 

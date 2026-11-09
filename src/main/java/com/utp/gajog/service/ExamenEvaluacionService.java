@@ -88,7 +88,7 @@ public class ExamenEvaluacionService {
     }
 
     // ------------------------------------------------------------------
-    // CU16 + CU17 - Calificar y registrar resultado
+
     // ------------------------------------------------------------------
     /**
      * @param examenId examen PENDIENTE con pago registrado
@@ -109,13 +109,13 @@ public class ExamenEvaluacionService {
                 .orElseThrow(() -> new IllegalArgumentException(
                 "El examen seleccionado no existe."));
 
-        // A2: un examen ya evaluado no admite más modificaciones.
+
         if (examen.getResultado() != ResultadoExamen.PENDIENTE) {
             throw new IllegalStateException(
                     "El examen ya fue evaluado y no admite más cambios.");
         }
 
-        // Rombo "¿Pago registrado?": sin pago no se puede evaluar.
+
         if (!pagoService.tienePagoRegistrado(examenId)) {
             throw new IllegalStateException(
                     "El pago del examen está pendiente. "
@@ -145,7 +145,7 @@ public class ExamenEvaluacionService {
                     "Las observaciones no pueden pasar de 1000 caracteres.");
         }
 
-        // A3 + A1: todos los criterios con puntaje entre 0 y su máximo.
+
         List<CriterioExamen> criterios = listarCriterios();
 
         if (criterios.isEmpty()) {
@@ -200,11 +200,11 @@ public class ExamenEvaluacionService {
         examen.setObservaciones(
                 comentario == null || comentario.isEmpty() ? null : comentario);
 
-        // Rombo "¿Aprobó?"
+
         if (total.compareTo(puntajeMinimo) >= 0) {
             examen.setResultado(ResultadoExamen.APROBADO);
 
-            // Sistema web: actualiza cinturón e historial de ascensos.
+
             alumno.setCinturonActual(objetivo);
             alumnoRepository.save(alumno);
 
@@ -216,7 +216,7 @@ public class ExamenEvaluacionService {
             historialRepository.save(historial);
 
         } else {
-            // "No: conserva cinturón"
+
             examen.setResultado(ResultadoExamen.REPROBADO);
         }
 

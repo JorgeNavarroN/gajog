@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 
 /**
  *
@@ -21,7 +22,19 @@ public interface GrupoRepository extends JpaRepository<Grupo, Long> {
 
     List<Grupo> findByCategoria_IdAndActivoTrue(Long categoriaId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT g FROM Grupo g WHERE g.id = :id")
+    @Query(
+            value = "SELECT * FROM grupos WHERE id = :id FOR UPDATE",
+            nativeQuery = true
+    )
     Optional<Grupo> findByIdConBloqueo(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {
+        "categoria",
+        "instructor.persona",
+        "horarios"
+    })
+    @Query("SELECT DISTINCT g FROM Grupo g ORDER BY g.nombre")
+    List<Grupo> listarParaGestion();
+
+    boolean existsByNombreIgnoreCase(String nombre);
 }
