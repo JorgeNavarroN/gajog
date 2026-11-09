@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Detalle de torneo', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .t-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+                .t-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                .t-tabla-ancho { min-width: 0 !important; }
+                .t-medalla-1 { background:#4a3b12; color:#ffd666; }
+                .t-medalla-2 { background:#2c3440; color:#d5dde8; }
+                .t-medalla-3 { background:#4a2c1a; color:#e8a66f; }
+                a.boton { text-decoration: none; }
+                .t-sub { margin: 28px 0 12px; font-size: 16px; }
+            </style>
+
+            <header class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta" th:text="${torneo.modalidad.etiqueta}">MODALIDAD</div>
+                    <h1 class="titulo" th:text="${torneo.nombre}">Torneo</h1>
+                    <p class="descripcion">
+                        <span th:text="${#temporals.format(torneo.fecha, 'dd/MM/yyyy')}">fecha</span> ·
+                        <span th:text="${torneo.sede}">sede</span> · Cuota
+                        <span th:text="${'S/ ' + #numbers.formatDecimal(torneo.cuotaInscripcion, 1, 2)}">S/ 30.00</span> ·
+                        <span class="estado estado-pendiente" th:text="${torneo.estado.etiqueta}">estado</span>
+                    </p>
+                </div>
+                <div class="t-acciones">
+                    <a class="boton" th:href="@{/torneos}">Volver</a>
+                    <a class="boton" th:href="@{/torneos/{id}/resultados(id=${torneo.id})}">Resultados</a>
+                    <a class="boton" th:if="${esPoomsae and torneo.estado.name() != 'INSCRIPCION_ABIERTA'}"
+                       th:href="@{/torneos/{id}/poomsae(id=${torneo.id})}">Panel de poomsae</a>
+                    <a class="boton" th:if="${esRompimiento and torneo.estado.name() != 'INSCRIPCION_ABIERTA'}"
+                       th:href="@{/torneos/{id}/rompimiento(id=${torneo.id})}">Panel de rompimiento</a>
+                </div>
+            </header>
+
+            <div class="caja-categoria" role="status" th:if="${exito != null}" th:text="${exito}"></div>
+            <div class="errores-formulario" role="alert" th:if="${error != null}" th:text="${error}"></div>
+
+            <div class="t-grid" style="margin-bottom:20px">
+                <div class="panel"><div class="etiqueta">INSCRITOS</div><div style="font-size:34px;font-weight:800" th:text="${totalInscritos}">0</div></div>
+                <div class="panel"><div class="etiqueta">CATEGORÍAS</div><div style="font-size:34px;font-weight:800" th:text="${totalCategorias}">0</div></div>
+                <div class="panel"><div class="etiqueta">RECAUDADO</div><div style="font-size:34px;font-weight:800" th:text="${'S/ ' + #numbers.formatDecimal(recaudado, 1, 2)}">S/ 0.00</div></div>
+                <div class="panel"><div class="etiqueta">MEDALLAS ENTREGADAS</div><div style="font-size:34px;font-weight:800" th:text="${totalMedallas}">0</div></div>
+            </div>
+
+            <div class="panel" th:if="${abierto}">
+                <h2 class="t-sub" style="margin-top:0">Inscribir competidor</h2>
+                <form method="post" th:action="@{/torneos/{id}/inscribir(id=${torneo.id})}" th:object="${inscripcionForm}">
+                    <div class="grilla-dos">
+                        <div class="campo">
+                            <label for="alumnoId">Alumno</label>
+                            <select id="alumnoId" th:field="*{alumnoId}" required>
+                                <option value="">Seleccione…</option>
+                                <option th:each="a : ${alumnos}" th:value="${a.id}"
+                                        th:text="${a.persona.nombres + ' ' + a.persona.apellidos + ' — DNI ' + a.persona.dni}">Alumno</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label for="pesoKg">Peso (kg)</label>
+                            <input id="pesoKg" type="number" step="0.1" min="10" max="200" th:field="*{pesoKg}" required>
+                        </div>
+                        <div class="campo">
+                            <label for="medioPago">Medio de pago de la cuota</label>
+                            <select id="medioPago" th:field="*{medioPago}">
+                                <option th:each="m : ${mediosPago}" th:value="${m}" th:text="${m}">EFECTIVO</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="descripcion" style="margin-top:12px">
+                        La categoría se asigna sola por edad, cinturón y peso. Sin pago de la cuota no hay inscripción.
+                    </p>
+                    <div class="acciones-formulario" style="margin-top: 16px;">
+                        <button type="submit" class="boton boton-primario">Inscribir y registrar pago</button>
+                    </div>
+                </form>
+            </div>
+
+            <h2 class="t-sub">Inscritos</h2>
+            <div class="tabla-contenedor panel">
+                <table class="tabla t-tabla-ancho">
+                    <thead><tr><th>Competidor</th><th>Cinturón</th><th>Peso</th><th>Categoría</th><th>Pagó</th><th>Puesto</th></tr></thead>
+                    <tbody>
+                        <tr th:each="i : ${inscritos}">
+                            <td th:text="${i.nombreCompleto}">Nombre</td>
+                            <td th:text="${i.alumno.cinturonActual != null ? i.alumno.cinturonActual.nombre : '-'}">Blanco</td>
+                            <td th:text="${i.pesoKg + ' kg'}">40 kg</td>
+                            <td th:text="${i.categoria}">Categoría</td>
+                            <td th:text="${'S/ ' + #numbers.formatDecimal(i.montoPagado, 1, 2)}">S/ 30.00</td>
+                            <td>
+                                <span class="estado" th:if="${i.puesto != null}"
+                                      th:classappend="${'t-medalla-' + i.puesto}"
+                                      th:text="${i.puesto == 1 ? 'Oro' : (i.puesto == 2 ? 'Plata' : 'Bronce')}">Oro</span>
+                                <span th:if="${i.puesto == null}">-</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(inscritos)}"><td colspan="6">Aún no hay inscritos.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="panel" th:if="${abierto}" style="margin-top:20px">
+                <h2 class="t-sub" style="margin-top:0">Cerrar inscripciones</h2>
+                <p class="descripcion" th:if="${esCombate}">Al sortear se cierran las inscripciones y el sistema arma las llaves por categoría.</p>
+                <p class="descripcion" th:if="${esPoomsae}">Al iniciar se cierran las inscripciones y se habilita la calificación de los 5 jueces.</p>
+                <p class="descripcion" th:if="${esRompimiento}">Al iniciar se cierran las inscripciones y se habilita el panel de rompimiento (3 intentos por competidor).</p>
+                <form method="post" th:if="${esCombate}" th:action="@{/torneos/{id}/sortear(id=${torneo.id})}" style="margin-top:12px">
+                    <button type="submit" class="boton boton-primario">Cerrar inscripciones y sortear llaves</button>
+                </form>
+                <form method="post" th:if="${esPoomsae}" th:action="@{/torneos/{id}/iniciar-poomsae(id=${torneo.id})}" style="margin-top:12px">
+                    <button type="submit" class="boton boton-primario">Cerrar inscripciones e iniciar poomsae</button>
+                </form>
+                <form method="post" th:if="${esRompimiento}" th:action="@{/torneos/{id}/iniciar-rompimiento(id=${torneo.id})}" style="margin-top:12px">
+                    <button type="submit" class="boton boton-primario">Cerrar inscripciones e iniciar rompimiento</button>
+                </form>
+            </div>
+
+            <div th:if="${esCombate and !#lists.isEmpty(llaves)}">
+                <h2 class="t-sub">Llaves</h2>
+                <div class="panel" th:each="llave : ${llaves}" style="margin-bottom:16px">
+                    <h3 style="margin:0 0 14px" th:text="${llave.categoria}">Categoría</h3>
+                    <div th:each="ronda : ${llave.rondas}" style="margin-bottom:12px">
+                        <div class="etiqueta" th:text="${ronda.nombre}">RONDA</div>
+                        <table class="tabla t-tabla-ancho">
+                            <tbody>
+                                <tr th:each="c : ${ronda.combates}">
+                                    <td th:text="${c.azul != null ? c.azul.nombreCompleto : 'Por definir'}">Azul</td>
+                                    <td style="text-align:center">vs</td>
+                                    <td th:text="${c.rojo != null ? c.rojo.nombreCompleto : (c.estado.name() == 'FINALIZADO' ? '— (pase directo)' : 'Por definir')}">Rojo</td>
+                                    <td>
+                                        <span th:if="${c.ganador != null}" class="estado estado-activo"
+                                              th:text="${'Ganó ' + c.ganador.nombreCompleto + ' · ' + c.tipoVictoria.etiqueta}">Ganador</span>
+                                        <span th:if="${c.ganador == null}" class="estado estado-pendiente"
+                                              th:text="${c.estado.name() == 'EN_CURSO' ? 'En curso' : 'Pendiente'}">Pendiente</span>
+                                    </td>
+                                    <td>
+                                        <a class="boton" th:if="${c.azul != null and c.rojo != null and c.estado.name() != 'FINALIZADO'}"
+                                           th:href="@{/torneos/combates/{cid}(cid=${c.id})}">Abrir marcador</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </body>
+</html>

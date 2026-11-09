@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Calificación de poomsae', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .t-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+                .t-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                .t-tabla-ancho { min-width: 0 !important; }
+                .t-medalla-1 { background:#4a3b12; color:#ffd666; }
+                .t-medalla-2 { background:#2c3440; color:#d5dde8; }
+                .t-medalla-3 { background:#4a2c1a; color:#e8a66f; }
+                a.boton { text-decoration: none; }
+                .t-sub { margin: 28px 0 12px; font-size: 16px; }
+            </style>
+
+            <style>
+                .jueces-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 12px 0; }
+                .juez-caja { padding: 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--campo); }
+                .juez-caja strong { display:block; font-size: 11px; margin-bottom: 6px; color: var(--secundario); }
+                .juez-caja input { width: 100%; margin-bottom: 6px; }
+                .juez-caja .tot { font-size: 18px; font-weight: 800; }
+                .juez-caja.descartada { opacity: .45; }
+                .juez-caja.descartada .tot { text-decoration: line-through; }
+                .pm-vivo { margin: 10px 0 14px; padding: 12px; border-radius: 10px; background: var(--campo); color: var(--secundario); font-size: 13px; }
+                .pm-vivo strong { color: #ffd666; font-size: 22px; }
+            </style>
+            <header class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">POOMSAE</div>
+                    <h1 class="titulo" th:text="${torneo.nombre}">Torneo</h1>
+                    <p class="descripcion">5 jueces. Exactitud de 0 a 4 y presentación de 0 a 6. Se descarta la nota total más alta y la más baja.</p>
+                </div>
+                <a class="boton" th:href="@{/torneos/{id}(id=${torneo.id})}">Volver al torneo</a>
+            </header>
+
+            <div class="caja-categoria" role="status" th:if="${exito != null}" th:text="${exito}"></div>
+            <div class="errores-formulario" role="alert" th:if="${error != null}" th:text="${error}"></div>
+
+            <div class="panel" th:each="i : ${inscritos}" style="margin-bottom:16px">
+                <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap">
+                    <div>
+                        <strong th:text="${i.nombreCompleto}">Competidor</strong>
+                        <div class="descripcion" th:text="${i.categoria}">Categoría</div>
+                    </div>
+                    <div>
+                        <span class="estado estado-activo" th:if="${i.notaFinal != null}"
+                              th:text="${'Nota final: ' + i.notaFinal}">Nota</span>
+                        <span class="estado estado-pendiente" th:if="${i.notaFinal == null}">Sin calificar</span>
+                    </div>
+                </div>
+                <form method="post" th:if="${enCurso}"
+                      th:action="@{/torneos/{id}/poomsae/{iid}(id=${torneo.id},iid=${i.id})}">
+                    <div class="jueces-grid">
+                        <div class="juez-caja" th:each="n : ${#numbers.sequence(1, jueces)}">
+                            <strong th:text="${'Juez ' + n}">Juez</strong>
+                            <div class="tot" data-pm="t">-</div>
+                            <input type="number" name="exactitud" step="0.1" min="0" max="4" placeholder="Exactitud 0-4" required data-pm="e"
+                                   th:value="${#lists.size(notas[i.id]) >= n ? notas[i.id][n - 1].exactitud : ''}">
+                            <input type="number" name="presentacion" step="0.1" min="0" max="6" placeholder="Present. 0-6" required data-pm="p"
+                                   th:value="${#lists.size(notas[i.id]) >= n ? notas[i.id][n - 1].presentacion : ''}">
+                        </div>
+                    </div>
+                    <div class="pm-vivo" data-pm="vivo">Ingrese las 10 notas para ver el promedio (se descarta la más alta y la más baja).</div>
+                    <button type="submit" class="boton boton-primario">Guardar notas</button>
+                </form>
+            </div>
+
+            <h2 style="margin:24px 0 10px;font-size:16px">Tablero de clasificación</h2>
+            <div class="panel tabla-contenedor" style="margin-bottom:18px">
+                <table class="tabla" style="min-width:0">
+                    <thead><tr><th>Categoría</th><th>Competidor</th><th>Nota final</th></tr></thead>
+                    <tbody>
+                        <tr th:each="c : ${clasificacion}">
+                            <td th:text="${c.categoria}">Categoría</td>
+                            <td th:text="${c.nombreCompleto}">Nombre</td>
+                            <td><strong th:text="${c.notaFinal}">8.50</strong></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(clasificacion)}"><td colspan="3">Aún no hay competidores calificados.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <form method="post" th:if="${enCurso}" th:action="@{/torneos/{id}/poomsae/cerrar(id=${torneo.id})}">
+                <button type="submit" class="boton boton-primario">Finalizar competencia y asignar medallas</button>
+            </form>
+
+            <script>
+                (function () {
+                    // Cálculo en vivo: total por juez, se tachan la nota más alta y la más baja
+                    document.querySelectorAll('form[action*="/poomsae/"]').forEach(function (form) {
+                        var cajas = form.querySelectorAll('.juez-caja');
+                        var vivo = form.querySelector('[data-pm="vivo"]');
+                        if (!vivo) { return; }
+                        function recalcular() {
+                            var totales = [];
+                            cajas.forEach(function (c) {
+                                var e = parseFloat(c.querySelector('[data-pm="e"]').value);
+                                var p = parseFloat(c.querySelector('[data-pm="p"]').value);
+                                var t = c.querySelector('[data-pm="t"]');
+                                c.classList.remove('descartada');
+                                if (isNaN(e) || isNaN(p)) { t.textContent = '-'; totales.push(null); }
+                                else { var v = e + p; t.textContent = v.toFixed(2); totales.push(v); }
+                            });
+                            if (totales.some(function (v) { return v === null; })) {
+                                vivo.textContent = 'Ingrese las 10 notas para ver el promedio (se descarta la más alta y la más baja).';
+                                return;
+                            }
+                            var orden = totales.map(function (v, i) { return { v: v, i: i }; }).sort(function (a, b) { return a.v - b.v; });
+                            cajas[orden[0].i].classList.add('descartada');
+                            cajas[orden[orden.length - 1].i].classList.add('descartada');
+                            var medio = orden.slice(1, orden.length - 1);
+                            var suma = medio.reduce(function (s, x) { return s + x.v; }, 0);
+                            vivo.innerHTML = 'Nota final: <strong>' + (suma / medio.length).toFixed(2) + '</strong> &nbsp;·&nbsp; se descartó la más alta y la más baja';
+                        }
+                        form.addEventListener('input', recalcular);
+                        recalcular();
+                    });
+                })();
+            </script>
+
+        </section>
+    </body>
+</html>

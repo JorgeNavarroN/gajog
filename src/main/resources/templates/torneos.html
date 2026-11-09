@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Torneos', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .t-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+                .t-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                .t-tabla-ancho { min-width: 0 !important; }
+                .t-medalla-1 { background:#4a3b12; color:#ffd666; }
+                .t-medalla-2 { background:#2c3440; color:#d5dde8; }
+                .t-medalla-3 { background:#4a2c1a; color:#e8a66f; }
+                a.boton { text-decoration: none; }
+                .t-sub { margin: 28px 0 12px; font-size: 16px; }
+            </style>
+
+            <header class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">COMPETENCIAS</div>
+                    <h1 class="titulo">Torneos</h1>
+                    <p class="descripcion">Organice torneos de combate o poomsae, inscriba alumnos y registre resultados.</p>
+                </div>
+                <div class="t-acciones">
+                    <a class="boton" th:href="@{/torneos/ranking}">Ranking de medallas</a>
+                    <a class="boton boton-primario" th:href="@{/torneos/nuevo}">+ Nuevo torneo</a>
+                </div>
+            </header>
+
+            <div class="caja-categoria" role="status" th:if="${exito != null}" th:text="${exito}"></div>
+            <div class="errores-formulario" role="alert" th:if="${error != null}" th:text="${error}"></div>
+
+            <div class="tabla-contenedor panel">
+                <table class="tabla">
+                    <thead>
+                        <tr>
+                            <th>Torneo</th><th>Fecha</th><th>Sede</th><th>Modalidad</th><th>Cuota</th><th>Estado</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="t : ${torneos}">
+                            <td th:text="${t.nombre}">Torneo</td>
+                            <td th:text="${#temporals.format(t.fecha, 'dd/MM/yyyy')}">01/01/2026</td>
+                            <td th:text="${t.sede}">Sede</td>
+                            <td th:text="${t.modalidad.etiqueta}">Combate</td>
+                            <td th:text="${'S/ ' + #numbers.formatDecimal(t.cuotaInscripcion, 1, 2)}">S/ 30.00</td>
+                            <td><span class="estado"
+                                      th:classappend="${t.estado.name() == 'FINALIZADO' ? 'estado-activo' : 'estado-pendiente'}"
+                                      th:text="${t.estado.etiqueta}">Estado</span></td>
+                            <td><a class="boton" th:href="@{/torneos/{id}(id=${t.id})}">Abrir</a></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(torneos)}">
+                            <td colspan="7">Todavía no hay torneos. Cree el primero con “+ Nuevo torneo”.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+    </body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(
+      'Resultados del torneo', 'torneos', ~{::contenido})}">
+
+    <body>
+        <section th:fragment="contenido">
+
+            <style>
+                .t-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+                .t-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                .t-tabla-ancho { min-width: 0 !important; }
+                .t-medalla-1 { background:#4a3b12; color:#ffd666; }
+                .t-medalla-2 { background:#2c3440; color:#d5dde8; }
+                .t-medalla-3 { background:#4a2c1a; color:#e8a66f; }
+                a.boton { text-decoration: none; }
+                .t-sub { margin: 28px 0 12px; font-size: 16px; }
+            </style>
+
+            <header class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">RESULTADOS</div>
+                    <h1 class="titulo" th:text="${torneo.nombre}">Torneo</h1>
+                    <p class="descripcion">Medallistas por categoría.</p>
+                </div>
+                <div class="t-acciones">
+                    <a class="boton" th:href="@{/torneos/{id}(id=${torneo.id})}">Volver al torneo</a>
+                    <a class="boton boton-primario" th:href="@{/torneos/{id}/resultados.xlsx(id=${torneo.id})}">Exportar a Excel</a>
+                </div>
+            </header>
+
+            <div class="tabla-contenedor panel">
+                <table class="tabla t-tabla-ancho">
+                    <thead><tr><th>Categoría</th><th>Medalla</th><th>Competidor</th><th>Nota</th><th></th></tr></thead>
+                    <tbody>
+                        <tr th:each="m : ${medallistas}">
+                            <td th:text="${m.categoria}">Categoría</td>
+                            <td><span class="estado" th:classappend="${'t-medalla-' + m.puesto}"
+                                      th:text="${m.puesto == 1 ? 'Oro' : (m.puesto == 2 ? 'Plata' : 'Bronce')}">Oro</span></td>
+                            <td th:text="${m.nombreCompleto}">Nombre</td>
+                            <td th:text="${m.notaFinal != null ? m.notaFinal : '-'}">-</td>
+                            <td><a class="boton" th:href="@{/torneos/{id}/constancia/{iid}(id=${torneo.id},iid=${m.id})}">Constancia</a></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(medallistas)}"><td colspan="5">Todavía no hay medallistas. Se asignan al terminar cada categoría.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+    </body>
+</html>
