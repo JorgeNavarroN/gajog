@@ -36,6 +36,9 @@ public final class CalculadoraRompimiento {
 
     /** Puntos de un intento. */
     public static BigDecimal puntosIntento(BigDecimal coeficiente, int tablasIntentadas, int tablasRotas) {
+        if (coeficiente == null || coeficiente.signum() <= 0) {
+            throw new IllegalArgumentException("El coeficiente de la técnica no es válido.");
+        }
         validar(tablasIntentadas, tablasRotas);
         BigDecimal puntos = coeficiente.multiply(BigDecimal.valueOf(tablasRotas));
         if (esLimpio(tablasIntentadas, tablasRotas)) {

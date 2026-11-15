@@ -18,6 +18,7 @@ import com.utp.gajog.service.PoomsaeService;
 import com.utp.gajog.service.RankingTorneoService;
 import com.utp.gajog.service.RompimientoService;
 import com.utp.gajog.service.TorneoService;
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,6 +29,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -70,6 +74,25 @@ public class TorneoWebController {
         this.exportarService = exportarService;
     }
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(TorneoWebController.class);
+
+    /**
+     * A10 Mal manejo de condiciones excepcionales: si una pantalla recibe un
+     * torneo que no existe o una dirección mal escrita (/torneos/abc), se
+     * vuelve a la lista con un aviso claro en vez de mostrar el error 500
+     * con detalles internos del sistema.
+     */
+    @org.springframework.web.bind.annotation.ExceptionHandler({
+            IllegalArgumentException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    public String errorDePantalla(Exception e, RedirectAttributes redirect) {
+        log.warn("Solicitud rechazada en Torneos: {}", e.getMessage());
+        redirect.addFlashAttribute("error", e instanceof IllegalArgumentException
+                ? e.getMessage() : "La dirección no es válida.");
+        return "redirect:/torneos";
+    }
+
     // ----------------------------- LISTA Y NUEVO -----------------------------
 
     @GetMapping
@@ -89,9 +112,37 @@ public class TorneoWebController {
         return "torneos/nuevo";
     }
 
+    /**
+     * A05: solo se aceptan los campos del formulario; cualquier otro campo
+     * enviado por el navegador se ignora (evita asignación masiva).
+     */
+    @InitBinder("torneoForm")
+    public void camposTorneo(WebDataBinder binder) {
+        binder.setAllowedFields("nombre", "fecha", "sede", "modalidad", "cuotaInscripcion");
+    }
+
+    @InitBinder("inscripcionForm")
+    public void camposInscripcion(WebDataBinder binder) {
+        binder.setAllowedFields("alumnoId", "pesoKg", "medioPago");
+    }
+
+    /** Devuelve el primer mensaje de validación para mostrarlo en pantalla. */
+    private static String primerError(BindingResult resultado) {
+        return resultado.getAllErrors().isEmpty()
+                ? "Revise los datos del formulario."
+                : resultado.getAllErrors().get(0).getDefaultMessage();
+    }
+
     @PostMapping("/nuevo")
-    public String crear(@ModelAttribute("torneoForm") TorneoForm form,
+    public String crear(@Valid @ModelAttribute("torneoForm") TorneoForm form,
+            BindingResult resultado,
             RedirectAttributes redirect) {
+        // A05: se rechazan los datos que no cumplen las reglas de TorneoForm
+        if (resultado.hasErrors()) {
+            redirect.addFlashAttribute("error", primerError(resultado));
+            redirect.addFlashAttribute("torneoForm", form);
+            return "redirect:/torneos/nuevo";
+        }
         try {
             Torneo torneo = torneoService.crear(form);
             redirect.addFlashAttribute("exito", "Torneo creado correctamente.");
@@ -143,8 +194,15 @@ public class TorneoWebController {
 
     @PostMapping("/{id}/inscribir")
     public String inscribir(@PathVariable Long id,
-            @ModelAttribute("inscripcionForm") InscripcionTorneoForm form,
+            @Valid @ModelAttribute("inscripcionForm") InscripcionTorneoForm form,
+            BindingResult resultado,
             RedirectAttributes redirect) {
+        // A05: se rechazan los datos que no cumplen las reglas de InscripcionTorneoForm
+        if (resultado.hasErrors()) {
+            redirect.addFlashAttribute("error", primerError(resultado));
+            redirect.addFlashAttribute("inscripcionForm", form);
+            return "redirect:/torneos/" + id;
+        }
         try {
             InscripcionTorneo i = inscripcionService.inscribir(id, form);
             redirect.addFlashAttribute("exito",

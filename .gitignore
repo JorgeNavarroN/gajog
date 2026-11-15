@@ -39,3 +39,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Seguridad (A02): credenciales y logs locales ###
+src/main/resources/application-local.properties
+logs/

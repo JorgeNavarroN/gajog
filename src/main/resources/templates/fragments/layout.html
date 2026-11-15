@@ -9,6 +9,30 @@
         <meta name="viewport"
               content="width=device-width, initial-scale=1">
 
+        <!-- A01: token CSRF para las llamadas fetch (marcador y rompimiento) -->
+        <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+        <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+        <script>
+            (function () {
+                var token = document.querySelector('meta[name="_csrf"]');
+                var cabecera = document.querySelector('meta[name="_csrf_header"]');
+                if (!token || !cabecera || !window.fetch) { return; }
+                var fetchOriginal = window.fetch;
+                window.fetch = function (url, opciones) {
+                    opciones = opciones || {};
+                    var metodo = (opciones.method || 'GET').toUpperCase();
+                    if (metodo !== 'GET' && metodo !== 'HEAD') {
+                        var headers = new Headers(opciones.headers || {});
+                        if (!headers.has(cabecera.content)) {
+                            headers.set(cabecera.content, token.content);
+                        }
+                        opciones.headers = headers;
+                    }
+                    return fetchOriginal.call(this, url, opciones);
+                };
+            })();
+        </script>
+
         <title th:text="${titulo} + ' | GAJOG TKD'">
             GAJOG TKD
         </title>
@@ -156,6 +180,21 @@
                 gap: 10px;
                 color: var(--secundario);
                 font-size: 11px;
+            }
+
+            .boton-salir {
+                padding: 7px 12px;
+                border: 1px solid var(--borde);
+                border-radius: 7px;
+                background: transparent;
+                color: var(--secundario);
+                font-size: 11px;
+                cursor: pointer;
+            }
+
+            .boton-salir:hover {
+                background: #1d2734;
+                color: white;
             }
 
             .avatar {
@@ -610,15 +649,15 @@
 
             <nav aria-label="Navegación principal">
 
-                <div class="menu-titulo">GESTIÓN</div>
+                <div class="menu-titulo" th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION'}">GESTIÓN</div>
 
-                <a th:href="@{/matriculas}"
+                <a th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION'}" th:href="@{/matriculas}"
                    class="menu-enlace"
                    th:classappend="${seccion == 'matriculas' ? 'activo' : ''}">
                     Matrículas
                 </a>
 
-                <a th:href="@{/horarios}"
+                <a th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION'}" th:href="@{/horarios}"
                    class="menu-enlace"
                    th:classappend="${seccion == 'horarios' ? 'activo' : ''}">
                     Horarios
@@ -626,33 +665,39 @@
 
                 <div class="menu-titulo">CLASES Y COBROS</div>
 
-                <a th:href="@{/mensualidades}"
+                <a th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION'}" th:href="@{/mensualidades}"
                    class="menu-enlace"
                    th:classappend="${seccion == 'mensualidades' ? 'activo' : ''}">
                     Mensualidades
                 </a>
 
-                      <a th:href="@{/asistencias}"
+                <a th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'INSTRUCTOR'}" th:href="@{/asistencias}"
                    class="menu-enlace"
                    th:classappend="${seccion == 'asistencias' ? 'activo' : ''}">
                     Asistencia
                 </a>
 
-                <a th:href="@{/torneos}"
+                <a th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION' or rolActual == 'INSTRUCTOR'}" th:href="@{/torneos}"
                    class="menu-enlace"
                    th:classappend="${seccion == 'torneos' ? 'activo' : ''}">
                     Torneos
                 </a>
 
-                <a th:href="@{/examenes}"
+                <a th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION' or rolActual == 'INSTRUCTOR'}" th:href="@{/examenes}"
                    class="menu-enlace"
                    th:classappend="${seccion == 'examenes' ? 'activo' : ''}">
                     Exámenes
                 </a>
                 
-                <div class="menu-titulo">REGISTRO</div>
+                <a th:if="${rolActual == 'ALUMNO' or rolActual == 'APODERADO'}" th:href="@{/torneos/ranking}"
+                   class="menu-enlace"
+                   th:classappend="${seccion == 'torneos' ? 'activo' : ''}">
+                    Ranking de torneos
+                </a>
 
-                <a th:href="@{/matriculas/nueva/paso-1}"
+                <div class="menu-titulo" th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION'}">REGISTRO</div>
+
+                <a th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION'}" th:href="@{/matriculas/nueva/paso-1}"
                    class="menu-enlace"
                    th:classappend="${seccion == 'nueva-matricula' ? 'activo' : ''}">
                     + Nueva matrícula
@@ -672,8 +717,13 @@
                 </div>
 
                 <div class="perfil">
-                    <span>Recepción</span>
-                    <div class="avatar">RP</div>
+                    <span th:text="${usuarioActual != null ? usuarioActual + ' · ' + rolActual : ''}">usuario</span>
+                    <div class="avatar"
+                         th:text="${usuarioActual != null ? #strings.toUpperCase(#strings.substring(usuarioActual, 0, 1)) : '?'}">U</div>
+                    <!-- A07: cerrar sesión por POST (con token CSRF) -->
+                    <form method="post" th:action="@{/logout}" th:if="${usuarioActual != null}">
+                        <button type="submit" class="boton-salir">Salir</button>
+                    </form>
                 </div>
 
             </header>

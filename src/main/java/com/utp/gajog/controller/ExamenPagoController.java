@@ -2,6 +2,7 @@ package com.utp.gajog.controller;
 
 import com.utp.gajog.dto.PagoExamenForm;
 import com.utp.gajog.service.ExamenPagoService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
@@ -28,6 +29,13 @@ public class ExamenPagoController {
         binder.setAllowedFields("monto", "medioPago", "fechaPago");
     }
 
+    /**
+     * A06 Diseño inseguro: separación de funciones. Solo recepción o el
+     * administrador registran el cobro; el instructor que evalúa no puede.
+     * A08 Integridad: solo se aceptan los campos monto, medioPago y fechaPago
+     * (ver configurarFormulario) y el monto se compara con la tarifa del servidor.
+     */
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','RECEPCION')")
     @PostMapping("/{alumnoId}/pago")
     public String registrarPago(
             @PathVariable("alumnoId") Long alumnoId,

@@ -29,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ExamenEvaluacionService {
 
     private static final ZoneId ZONA = ZoneId.of("America/Lima");
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(ExamenEvaluacionService.class);
 
     private final ExamenRepository examenRepository;
     private final CriterioExamenRepository criterioRepository;
@@ -100,6 +102,20 @@ public class ExamenEvaluacionService {
             Long examenId,
             Map<Long, BigDecimal> puntajes,
             String observaciones) {
+        return registrarResultado(examenId, null, puntajes, observaciones);
+    }
+
+    /**
+     * A08 Fallos de integridad de datos: no se confía en lo que envía el
+     * navegador. Si llega el alumno, se comprueba que el examen sea suyo, y
+     * solo se guardan puntajes de criterios que existen en la base de datos.
+     */
+    @Transactional
+    public Examen registrarResultado(
+            Long examenId,
+            Long alumnoId,
+            Map<Long, BigDecimal> puntajes,
+            String observaciones) {
 
         if (examenId == null) {
             throw new IllegalArgumentException("Selecciona un examen.");
@@ -123,6 +139,26 @@ public class ExamenEvaluacionService {
         }
 
         Alumno alumno = examen.getAlumno();
+
+        if (alumnoId != null && !alumnoId.equals(alumno.getId())) {
+            log.warn("Intento de evaluar el examen {} con un alumno que no corresponde ({}).",
+                    examenId, alumnoId);
+            throw new IllegalArgumentException(
+                    "El examen no corresponde al alumno seleccionado.");
+        }
+
+        if (puntajes != null) {
+            java.util.Set<Long> validos = new java.util.HashSet<>();
+            for (CriterioExamen c : listarCriterios()) {
+                validos.add(c.getId());
+            }
+            for (Long criterioId : puntajes.keySet()) {
+                if (!validos.contains(criterioId)) {
+                    throw new IllegalArgumentException(
+                            "Se recibió un criterio de evaluación que no existe.");
+                }
+            }
+        }
 
         if (alumno.getEstado() != EstadoAlumno.ACTIVO) {
             throw new IllegalStateException(

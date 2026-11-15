@@ -46,6 +46,9 @@ public final class CalculadoraPoomsae {
         if (totales == null || totales.size() < 3) {
             throw new IllegalArgumentException("Se necesitan al menos 3 jueces.");
         }
+        if (totales.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new IllegalArgumentException("Falta la nota de uno de los jueces.");
+        }
         List<BigDecimal> ordenadas = new ArrayList<>(totales);
         Collections.sort(ordenadas);
         List<BigDecimal> centrales = ordenadas.subList(1, ordenadas.size() - 1);
