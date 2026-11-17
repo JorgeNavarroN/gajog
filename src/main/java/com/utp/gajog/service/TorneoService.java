@@ -49,9 +49,19 @@ public class TorneoService {
         if (form.getModalidad() == null) {
             throw new IllegalArgumentException("Seleccione la modalidad.");
         }
+        if (form.getNombre().trim().length() > 120) {
+            throw new IllegalArgumentException("El nombre no puede pasar de 120 caracteres.");
+        }
+        if (form.getSede().trim().length() > 150) {
+            throw new IllegalArgumentException("La sede no puede pasar de 150 caracteres.");
+        }
         BigDecimal cuota = form.getCuotaInscripcion();
         if (cuota == null || cuota.signum() < 0) {
             throw new IllegalArgumentException("La cuota de inscripción no puede ser negativa.");
+        }
+
+        if (cuota.compareTo(new BigDecimal("99999999.99")) > 0) {
+            throw new IllegalArgumentException("La cuota es demasiado alta.");
         }
 
         Torneo torneo = new Torneo();

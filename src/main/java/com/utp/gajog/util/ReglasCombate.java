@@ -17,6 +17,9 @@ public final class ReglasCombate {
 
     /** Puntos de un lado en un round. */
     public static int puntosRound(int puntosAnotados, int faltasDelRival) {
+        if (puntosAnotados < 0 || faltasDelRival < 0) {
+            throw new IllegalArgumentException("Los puntos y las faltas no pueden ser negativos.");
+        }
         return puntosAnotados + faltasDelRival;
     }
 
@@ -31,11 +34,17 @@ public final class ReglasCombate {
 
     /** ¿Hay superioridad técnica (diferencia suficiente para terminar)? */
     public static boolean haySuperioridad(int puntosAzul, int puntosRojo, int diferenciaMinima) {
+        if (diferenciaMinima < 1) {
+            throw new IllegalArgumentException("La diferencia para superioridad debe ser al menos 1.");
+        }
         return Math.abs(puntosAzul - puntosRojo) >= diferenciaMinima;
     }
 
     /** ¿Se descalifica por acumular demasiadas faltas? */
     public static boolean descalificadoPorFaltas(int faltasTotales, int maximoFaltas) {
+        if (maximoFaltas < 1) {
+            return false;
+        }
         return faltasTotales >= maximoFaltas;
     }
 
@@ -45,6 +54,9 @@ public final class ReglasCombate {
      * @return 1 si gana el azul, 2 si gana el rojo, 0 si aún no se define
      */
     public static int ganadorPorRounds(int roundsAzul, int roundsRojo) {
+        if (roundsAzul >= ROUNDS_PARA_GANAR && roundsRojo >= ROUNDS_PARA_GANAR) {
+            return 0; // estado imposible: no se declara ganador
+        }
         if (roundsAzul >= ROUNDS_PARA_GANAR) {
             return 1;
         }
