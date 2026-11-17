@@ -17,6 +17,9 @@ public final class CategoriaTorneo {
         if (edad < 4) {
             throw new IllegalArgumentException("Edad mínima para competir: 4 años.");
         }
+        if (edad > 100) {
+            throw new IllegalArgumentException("La edad no es válida (máximo 100 años).");
+        }
         if (edad <= 11) {
             return "Infantil";
         }
@@ -28,6 +31,9 @@ public final class CategoriaTorneo {
 
     /** Nivel según el orden del cinturón (1 = blanco, el más bajo). */
     public static String nivelCinturon(int ordenCinturon) {
+        if (ordenCinturon < 1) {
+            throw new IllegalArgumentException("El orden del cinturón debe ser 1 o mayor.");
+        }
         if (ordenCinturon <= 3) {
             return "Principiante";
         }

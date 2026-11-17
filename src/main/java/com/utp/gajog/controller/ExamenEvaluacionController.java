@@ -6,6 +6,7 @@ import com.utp.gajog.service.ExamenEvaluacionService;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +28,11 @@ public class ExamenEvaluacionController {
         this.evaluacionService = evaluacionService;
     }
 
+    /**
+     * A06 Diseño inseguro: separación de funciones. Solo el instructor o el
+     * administrador pueden calificar; recepción no puede cambiar notas.
+     */
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','INSTRUCTOR')")
     @PostMapping("/{examenId}/evaluacion")
     public String registrarResultado(
             @PathVariable("examenId") Long examenId,
@@ -41,8 +47,10 @@ public class ExamenEvaluacionController {
         try {
             Map<Long, BigDecimal> puntajes = leerPuntajes(parametros);
 
+            // A08: se envía también el alumno para comprobar en el servidor
+            // que el examen realmente le pertenece.
             Examen examen = evaluacionService.registrarResultado(
-                    examenId, puntajes, observaciones);
+                    examenId, alumnoId, puntajes, observaciones);
 
             redirectAttributes.addFlashAttribute(
                     "exito",
