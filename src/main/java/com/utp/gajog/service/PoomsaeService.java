@@ -134,7 +134,7 @@ public class PoomsaeService {
         }
 
         for (List<InscripcionTorneo> lista : porCategoria.values()) {
-            lista.sort(Comparator.comparing(InscripcionTorneo::getNotaFinal).reversed());
+            lista.sort(Comparator.comparing((InscripcionTorneo inscripcion) -> inscripcion.getNotaFinal()).reversed());
             int puesto = 0;
             BigDecimal anterior = null;
             for (int idx = 0; idx < lista.size(); idx++) {

@@ -313,8 +313,8 @@ public class TorneoWebController {
             }
         }
         clasificacion.sort(java.util.Comparator
-                .comparing(InscripcionTorneo::getCategoria)
-                .thenComparing(InscripcionTorneo::getNotaFinal, java.util.Comparator.reverseOrder()));
+                .comparing((InscripcionTorneo inscripcion) -> inscripcion.getCategoria())
+                .thenComparing((InscripcionTorneo inscripcion) -> inscripcion.getNotaFinal(), java.util.Comparator.reverseOrder()));
 
         model.addAttribute("torneo", torneo);
         model.addAttribute("inscritos", inscritos);
@@ -419,8 +419,8 @@ public class TorneoWebController {
             }
         }
         medallistas.sort(java.util.Comparator
-                .comparing(InscripcionTorneo::getCategoria)
-                .thenComparing(InscripcionTorneo::getPuesto));
+                .comparing((InscripcionTorneo inscripcion) -> inscripcion.getCategoria())
+                .thenComparing((InscripcionTorneo inscripcion) -> inscripcion.getPuesto()));
         model.addAttribute("torneo", torneoService.obtener(id));
         model.addAttribute("medallistas", medallistas);
         model.addAttribute("seccion", "torneos");

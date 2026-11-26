@@ -112,8 +112,8 @@ public class ExamenPagoService {
                 && !t.getFechaInicio().isAfter(hoy))
                 .filter(t -> t.getFechaFin() == null
                 || !t.getFechaFin().isBefore(hoy))
-                .max(Comparator.comparing(Tarifa::getFechaInicio))
-                .map(Tarifa::getMonto)
+                .max(Comparator.comparing((Tarifa tarifa) -> tarifa.getFechaInicio()))
+                .map(tarifa -> tarifa.getMonto())
                 .orElse(TARIFA_POR_DEFECTO);
     }
 

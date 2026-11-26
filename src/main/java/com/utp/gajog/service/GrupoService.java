@@ -118,7 +118,7 @@ public class GrupoService {
                                             (com.utp.gajog.model.Horario h)
                                             -> h.getDiaSemana().ordinal())
                                     .thenComparing(
-                                            com.utp.gajog.model.Horario::getHoraInicio))
+                                            (com.utp.gajog.model.Horario horario) -> horario.getHoraInicio()))
                             .map(h -> h.getDiaSemana()
                                     + " · "
                                     + h.getHoraInicio().format(formato)

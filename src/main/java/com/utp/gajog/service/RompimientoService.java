@@ -73,8 +73,8 @@ public class RompimientoService {
         for (InscripcionTorneo i : inscritos) {
             lista.add(construir(i, porInscripcion.getOrDefault(i.getId(), new ArrayList<>())));
         }
-        lista.sort(Comparator.comparing(RompimientoDTO::categoria)
-                .thenComparing(Comparator.comparing(RompimientoDTO::total).reversed()));
+        lista.sort(Comparator.comparing((RompimientoDTO fila) -> fila.categoria())
+                .thenComparing(Comparator.comparing((RompimientoDTO fila) -> fila.total()).reversed()));
         return lista;
     }
 
