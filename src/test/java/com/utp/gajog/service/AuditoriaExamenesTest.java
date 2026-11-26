@@ -80,8 +80,8 @@ class AuditoriaExamenesTest {
         datos.evaluacionService.registrarResultado(10L, 1L,
                 Map.of(1L, new BigDecimal("30"), 2L, new BigDecimal("40")), "Comentario privado");
         assertTrue(captura.list.isEmpty());
-        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
-        List<String> mensajes = captura.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
+        TransactionSynchronizationManager.getSynchronizations().forEach(sincronizacion -> sincronizacion.afterCommit());
+        List<String> mensajes = captura.list.stream().map(evento -> evento.getFormattedMessage()).toList();
         assertEquals(4, mensajes.size());
         assertTrue(mensajes.stream().anyMatch(m -> m.contains("EVALUACION_REGISTRADA") && m.contains("total=70.00") && m.contains("usuario=instructor")));
         assertEquals(2, mensajes.stream().filter(m -> m.contains("CALIFICACION_REGISTRADA")).count());
@@ -108,7 +108,7 @@ class AuditoriaExamenesTest {
         iniciarTransaccion();
         datos.pagoService.registrarPagoExamen(1L, new BigDecimal("80"),
                 com.utp.gajog.enums.MedioPago.EFECTIVO, datos.hoy);
-        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+        TransactionSynchronizationManager.getSynchronizations().forEach(sincronizacion -> sincronizacion.afterCommit());
         assertEquals(1, captura.list.size());
         assertTrue(captura.list.getFirst().getFormattedMessage().contains("monto=80 medio=EFECTIVO"));
         assertTrue(captura.list.getFirst().getFormattedMessage().contains("examen=10"));
