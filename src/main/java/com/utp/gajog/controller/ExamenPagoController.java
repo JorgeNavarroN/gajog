@@ -2,6 +2,7 @@ package com.utp.gajog.controller;
 
 import com.utp.gajog.dto.PagoExamenForm;
 import com.utp.gajog.service.ExamenPagoService;
+import com.utp.gajog.service.AuditoriaExamenes;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -46,6 +47,7 @@ public class ExamenPagoController {
         redirectAttributes.addAttribute("alumno", alumnoId);
 
         if (resultado.hasErrors()) {
+            AuditoriaExamenes.rechazar("PAGO", alumnoId, null, "Formulario de pago inválido");
             redirectAttributes.addFlashAttribute(
                     "error",
                     "Revisa el monto, la fecha y el medio de pago.");
@@ -62,9 +64,15 @@ public class ExamenPagoController {
                     formulario.getFechaPago());
 
         } catch (IllegalArgumentException | IllegalStateException e) {
+            AuditoriaExamenes.rechazar("PAGO", alumnoId, null, e.getMessage());
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             redirectAttributes.addAttribute("tab", "pago");
 
+            return "redirect:/examenes";
+        } catch (RuntimeException e) {
+            AuditoriaExamenes.error("PAGO", alumnoId, null, e);
+            redirectAttributes.addFlashAttribute("error", "No se pudo guardar el pago. Revisa el estado del examen antes de reintentar.");
+            redirectAttributes.addAttribute("tab", "pago");
             return "redirect:/examenes";
         }
 
