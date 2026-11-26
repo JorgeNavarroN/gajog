@@ -217,7 +217,11 @@ public class ExamenPagoService {
         examen.setFechaExamen(fecha);
         examen.setResultado(ResultadoExamen.PENDIENTE);
 
-        return examenRepository.save(examen);
+        Examen guardado = examenRepository.save(examen);
+        AuditoriaExamenes.confirmar("EXAMEN_PROGRAMADO", "alumno=" + alumnoId
+                + " examen=" + guardado.getId() + " cinturonObjetivo=" + objetivo.getId()
+                + " fecha=" + fecha);
+        return guardado;
     }
 
     // ------------------------------------------------------------------
@@ -262,7 +266,12 @@ public class ExamenPagoService {
         pago.setFechaPago(fechaPago.atStartOfDay());
         pago.setEstado(EstadoPago.REGISTRADO);
 
-        return pagoRepository.save(pago);
+        Pago guardado = pagoRepository.save(pago);
+        AuditoriaExamenes.confirmar("PAGO_REGISTRADO", "alumno=" + alumnoId
+                + " examen=" + examen.getId() + " pago=" + guardado.getId()
+                + " monto=" + monto.toPlainString() + " medio=" + medioPago
+                + " fechaPago=" + fechaPago);
+        return guardado;
     }
 
     // ------------------------------------------------------------------
