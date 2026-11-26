@@ -3,6 +3,7 @@ package com.utp.gajog.controller;
 import com.utp.gajog.enums.ResultadoExamen;
 import com.utp.gajog.model.Examen;
 import com.utp.gajog.service.ExamenEvaluacionService;
+import com.utp.gajog.service.AuditoriaExamenes;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -60,7 +61,20 @@ public class ExamenEvaluacionController {
             redirectAttributes.addAttribute("tab", "resultado");
 
         } catch (IllegalArgumentException | IllegalStateException e) {
+            AuditoriaExamenes.rechazar("EVALUACION", alumnoId, examenId, e.getMessage());
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            Map<String, String> valores = new LinkedHashMap<>();
+            parametros.forEach((campo, valor) -> {
+                if (campo.startsWith(PREFIJO_PUNTAJE)) {
+                    valores.put(campo, valor);
+                }
+            });
+            redirectAttributes.addFlashAttribute("puntajesIngresados", valores);
+            redirectAttributes.addFlashAttribute("observacionesIngresadas", observaciones);
+            redirectAttributes.addAttribute("tab", "evaluacion");
+        } catch (RuntimeException e) {
+            AuditoriaExamenes.error("EVALUACION", alumnoId, examenId, e);
+            redirectAttributes.addFlashAttribute("error", "No se pudo guardar la evaluación. Revisa el resultado del examen antes de reintentar.");
             redirectAttributes.addAttribute("tab", "evaluacion");
         }
 

@@ -8,6 +8,7 @@ import com.utp.gajog.model.Examen;
 import com.utp.gajog.service.ExamenConsultaService;
 import com.utp.gajog.service.ExamenEvaluacionService;
 import com.utp.gajog.service.ExamenPagoService;
+import com.utp.gajog.service.AuditoriaExamenes;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -17,10 +18,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.SessionAttributes;
 
 
 @Controller
 @RequestMapping("/examenes")
+@SessionAttributes({"busquedaListadoExamenes", "estadoListadoExamenes"})
 public class ExamenWebController {
 
     private static final ZoneId ZONA = ZoneId.of("America/Lima");
@@ -42,11 +45,29 @@ public class ExamenWebController {
     public String mostrar(
             @RequestParam(name = "alumno", required = false) Long alumnoId,
             @RequestParam(name = "tab", required = false) String tab,
+            @RequestParam(name = "busqueda", defaultValue = "") String busqueda,
+            @RequestParam(name = "estado", defaultValue = "") String estado,
             Model model) {
 
         List<FilaExamenDTO> filas = consultaService.listarFilas();
 
-        model.addAttribute("filas", filas);
+        if (alumnoId == null) {
+            model.addAttribute("busquedaListadoExamenes", busqueda.trim());
+            model.addAttribute("estadoListadoExamenes", estado);
+        }
+
+        String termino = busqueda.trim().toLowerCase(java.util.Locale.ROOT);
+        model.addAttribute("busqueda", busqueda.trim());
+        model.addAttribute("estadoSeleccionado", estado);
+        model.addAttribute("estadosExamen", List.of("Sin examen", "Pago pendiente",
+                "Pago registrado · por evaluar", "Ascenso aprobado", "Examen reprobado"));
+        model.addAttribute("filas", filas.stream()
+                .filter(f -> (f.getAlumno().getPersona().getNombres() + " "
+                        + f.getAlumno().getPersona().getApellidos() + " "
+                        + f.getAlumno().getPersona().getDni())
+                        .toLowerCase(java.util.Locale.ROOT).contains(termino))
+                .filter(f -> estado.isBlank() || f.getEstado().equals(estado))
+                .toList());
         model.addAttribute("mediosPago", MedioPago.values());
         model.addAttribute("seleccionado", null);
 
@@ -55,6 +76,14 @@ public class ExamenWebController {
                 .findFirst();
 
         if (fila.isEmpty()) {
+            if (alumnoId != null) {
+                AuditoriaExamenes.rechazar("CONSULTA", alumnoId, null, "Alumno no disponible en el listado");
+                model.addAttribute("error", "El alumno no está disponible en el listado de Exámenes.");
+            } else {
+                AuditoriaExamenes.consultar("LISTADO_CONSULTADO", null,
+                        "filas=" + ((List<?>) model.getAttribute("filas")).size()
+                        + " busquedaAplicada=" + !busqueda.isBlank() + " estado=" + estado);
+            }
             return "examenes";
         }
 
@@ -78,7 +107,7 @@ public class ExamenWebController {
         model.addAttribute("proximoCinturon",
                 pagoService.proximoCinturon(alumno.getId()).orElse(null));
         model.addAttribute("pagoExamen",
-                pendiente
+                pendiente && examen != null
                         ? pagoService.pagoDelExamen(examen.getId()).orElse(null)
                         : null);
 
@@ -97,8 +126,9 @@ public class ExamenWebController {
                 consultaService.listarExamenesDelAlumno(alumno.getId()));
 
         model.addAttribute("tab", resolverPestana(tab, examen, pendiente, pagado));
+        AuditoriaExamenes.consultar("PANEL_CONSULTADO", alumnoId, "pestana=" + model.getAttribute("tab"));
 
-        return "examenes";
+        return "examenes/alumno";
     }
 
 

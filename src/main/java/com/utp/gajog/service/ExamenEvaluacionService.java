@@ -207,8 +207,6 @@ public class ExamenEvaluacionService {
                         + criterio.getNombre() + ".");
             }
 
-            puntaje = puntaje.setScale(2, RoundingMode.HALF_UP);
-
             if (puntaje.signum() < 0
                     || puntaje.compareTo(criterio.getPuntajeMaximo()) > 0) {
                 throw new IllegalArgumentException(
@@ -217,6 +215,12 @@ public class ExamenEvaluacionService {
                         + criterio.getPuntajeMaximo().toPlainString() + ".");
             }
 
+            if (puntaje.stripTrailingZeros().scale() > 2) {
+                throw new IllegalArgumentException(
+                        "El puntaje de \"" + criterio.getNombre()
+                        + "\" admite como máximo dos decimales.");
+            }
+            puntaje = puntaje.setScale(2, RoundingMode.UNNECESSARY);
             validados.put(criterio, puntaje);
             total = total.add(puntaje);
         }
@@ -256,6 +260,21 @@ public class ExamenEvaluacionService {
             examen.setResultado(ResultadoExamen.REPROBADO);
         }
 
-        return examenRepository.save(examen);
+        Examen guardado = examenRepository.save(examen);
+        AuditoriaExamenes.confirmar("EVALUACION_REGISTRADA", "alumno=" + alumno.getId()
+                + " examen=" + guardado.getId() + " total=" + total.toPlainString()
+                + " resultado=" + guardado.getResultado());
+        for (Map.Entry<CriterioExamen, BigDecimal> par : validados.entrySet()) {
+            AuditoriaExamenes.confirmar("CALIFICACION_REGISTRADA", "alumno=" + alumno.getId()
+                    + " examen=" + guardado.getId() + " criterio=" + par.getKey().getId()
+                    + " puntaje=" + par.getValue().toPlainString());
+        }
+        if (guardado.getResultado() == ResultadoExamen.APROBADO) {
+            AuditoriaExamenes.confirmar("ASCENSO_REGISTRADO", "alumno=" + alumno.getId()
+                    + " examen=" + guardado.getId()
+                    + " cinturonAnterior=" + (actual == null ? null : actual.getId())
+                    + " cinturonNuevo=" + objetivo.getId());
+        }
+        return guardado;
     }
 }

@@ -47,7 +47,10 @@
                     puntos.
                 </div>
 
-                <form th:action="@{/examenes/{id}/evaluacion(id=${examen.id})}"
+                <div class="aviso aviso-info" th:if="${rolActual != 'ADMINISTRADOR' and rolActual != 'INSTRUCTOR'}">
+                    Solo el instructor o el administrador pueden registrar la evaluación.
+                </div>
+                <form id="form-evaluacion" th:if="${rolActual == 'ADMINISTRADOR' or rolActual == 'INSTRUCTOR'}" th:action="@{/examenes/{id}/evaluacion(id=${examen.id})}"
                       method="post">
 
                     <input type="hidden"
@@ -68,7 +71,10 @@
                                    required
                                    th:id="${'puntaje-' + criterio.id}"
                                    th:name="${'puntaje-' + criterio.id}"
-                                   th:max="${criterio.puntajeMaximo}">
+                                   th:max="${criterio.puntajeMaximo}"
+                                   th:value="${puntajesIngresados != null ? puntajesIngresados.get('puntaje-' + criterio.id) : null}"
+                                   th:aria-describedby="${'error-puntaje-' + criterio.id}">
+                            <p class="error-campo" th:id="${'error-puntaje-' + criterio.id}" aria-live="polite"></p>
                         </div>
                     </div>
 
@@ -80,9 +86,13 @@
                                   name="observaciones"
                                   rows="4"
                                   maxlength="1000"
-                                  placeholder="Describe el desempeño durante el examen."></textarea>
+                                  placeholder="Describe el desempeño durante el examen." th:text="${observacionesIngresadas}"></textarea>
                     </div>
 
+                    <div class="resumen-evaluacion" role="status" aria-live="polite" id="resumen-puntajes"
+                         th:data-minimo="${puntajeMinimo}" th:data-maximo="${puntajeMaximoTotal}">
+                        Completa los puntajes para revisar el total antes de guardar.
+                    </div>
                     <div class="acciones-formulario"
                          style="justify-content: flex-end">
                         <button type="submit" class="boton boton-primario">
@@ -91,6 +101,7 @@
                     </div>
 
                 </form>
+                <script th:src="@{/js/examen-evaluacion.js}" defer></script>
 
             </th:block>
 
