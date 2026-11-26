@@ -222,7 +222,7 @@ public class AsistenciaService {
 
         formulario.getDetalles().sort(
                 java.util.Comparator.comparing(
-                        AsistenciaForm.Detalle::getNombreAlumno));
+                        (AsistenciaForm.Detalle detalle) -> detalle.getNombreAlumno()));
 
         return formulario;
     }

@@ -73,8 +73,8 @@ public class ExamenEvaluacionService {
     @Transactional(readOnly = true)
     public BigDecimal puntajeMaximoTotal() {
         return listarCriterios().stream()
-                .map(CriterioExamen::getPuntajeMaximo)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(criterio -> criterio.getPuntajeMaximo())
+                .reduce(BigDecimal.ZERO, (total, puntaje) -> total.add(puntaje));
     }
 
     @Transactional(readOnly = true)

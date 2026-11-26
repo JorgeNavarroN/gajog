@@ -120,7 +120,7 @@ public class MatriculaService {
 
         // Carga una vez los horarios de cada grupo dentro de la transacción.
         matriculas.stream()
-                .map(Matricula::getGrupo)
+                .map(matricula -> matricula.getGrupo())
                 .distinct()
                 .forEach(grupo -> grupo.getHorarios().size());
 

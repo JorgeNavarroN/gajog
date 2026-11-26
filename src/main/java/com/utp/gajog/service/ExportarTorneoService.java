@@ -55,7 +55,7 @@ public class ExportarTorneoService {
 
         List<InscripcionTorneo> inscritos = new ArrayList<>(inscripcionRepository
                 .findByTorneo_IdOrderByCategoriaAscIdAsc(torneoId));
-        inscritos.sort(Comparator.comparing(InscripcionTorneo::getCategoria)
+        inscritos.sort(Comparator.comparing((InscripcionTorneo inscripcion) -> inscripcion.getCategoria())
                 .thenComparing(i -> i.getPuesto() == null ? 99 : i.getPuesto()));
 
         try (Workbook libro = new XSSFWorkbook(); ByteArrayOutputStream salida = new ByteArrayOutputStream()) {

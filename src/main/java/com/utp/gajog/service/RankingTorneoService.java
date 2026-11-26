@@ -52,8 +52,8 @@ public class RankingTorneoService {
             int puntos = m[0] * PUNTOS_ORO + m[1] * PUNTOS_PLATA + m[2] * PUNTOS_BRONCE;
             filas.add(new FilaRanking(0, e.getKey(), m[0], m[1], m[2], puntos));
         }
-        filas.sort(Comparator.comparingInt(FilaRanking::puntos).reversed()
-                .thenComparing(Comparator.comparingInt(FilaRanking::oros).reversed()));
+        filas.sort(Comparator.comparingInt((FilaRanking fila) -> fila.puntos()).reversed()
+                .thenComparing(Comparator.comparingInt((FilaRanking fila) -> fila.oros()).reversed()));
 
         List<FilaRanking> conPosicion = new ArrayList<>();
         for (int idx = 0; idx < filas.size(); idx++) {
