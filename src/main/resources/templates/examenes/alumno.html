@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html
+    lang="es"
+    xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{fragments/layout :: pagina(
+      'Exámenes',
+      'examenes',
+      ~{::contenido}
+      )}">
+    <body>
+        <section th:fragment="contenido">
+            <link rel="stylesheet" th:href="@{/css/examenes.css}">
+            <div class="encabezado-pagina">
+                <div>
+                    <div class="etiqueta">
+                        ACADEMIA / ASCENSOS
+                    </div>
+                    <h1 class="titulo">
+                        Gestionar examen
+                    </h1>
+                </div>
+                <a class="boton" th:href="@{/examenes(busqueda=${busquedaListadoExamenes},estado=${estadoListadoExamenes})}">
+                    ← Volver al listado
+                </a>
+            </div>
+            <div class="caja-categoria" role="status" th:if="${exito != null}" th:text="${exito}">
+            </div>
+            <div class="errores-formulario" role="alert" th:if="${error != null}" th:text="${error}">
+            </div>
+            <section class="panel">
+                <div class="examenes-cabecera-alumno">
+                    <h2
+                        th:text="${seleccionado.persona.nombres
+                                + ' ' + seleccionado.persona.apellidos}">
+                        Alumno
+                    </h2>
+                    <span
+                        class="insignia-cinturon"
+                        th:if="${seleccionado.cinturonActual != null}"
+                        th:text="${'Cinturón actual: '
+                                  + seleccionado.cinturonActual.nombre}"
+                        th:style="|background:${@coloresCinturon.fondo(seleccionado.cinturonActual.color)};color:${@coloresCinturon.texto(seleccionado.cinturonActual.color)}|">
+                        Cinturón actual
+                    </span>
+                </div>
+                <nav class="examenes-pestanas" aria-label="Pasos del examen">
+                    <a
+                        th:href="@{/examenes(alumno=${seleccionado.id}, tab='pago')}"
+                        th:classappend="${tab == 'pago' ? 'activa' : ''}">
+                        1. Pago
+                    </a>
+                    <a
+                        th:href="@{/examenes(alumno=${seleccionado.id}, tab='evaluacion')}"
+                        th:classappend="${tab == 'evaluacion' ? 'activa' : ''}">
+                        2. Evaluación
+                    </a>
+                    <a
+                        th:href="@{/examenes(alumno=${seleccionado.id}, tab='resultado')}"
+                        th:classappend="${tab == 'resultado' ? 'activa' : ''}">
+                        3. Resultado
+                    </a>
+                </nav>
+                <th:block th:if="${tab == 'pago'}">
+                    <div th:replace="~{examenes/pago :: panel}">
+                    </div>
+                </th:block>
+                <th:block th:if="${tab == 'evaluacion'}">
+                    <div th:replace="~{examenes/evaluacion :: panel}">
+                    </div>
+                </th:block>
+                <th:block th:if="${tab == 'resultado'}">
+                    <div th:replace="~{examenes/resultado :: panel}">
+                    </div>
+                </th:block>
+            </section>
+        </section>
+    </body>
+</html>

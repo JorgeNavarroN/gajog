@@ -71,7 +71,12 @@
             </div>
 
             <!-- Formulario de cobro -->
-            <form th:if="${pagoExamen == null and proximoCinturon != null}"
+            <div class="aviso aviso-info"
+                 th:if="${pagoExamen == null and proximoCinturon != null and rolActual != 'ADMINISTRADOR' and rolActual != 'RECEPCION'}">
+                Recepción debe registrar el pago para habilitar la evaluación.
+            </div>
+
+            <form th:if="${pagoExamen == null and proximoCinturon != null and (rolActual == 'ADMINISTRADOR' or rolActual == 'RECEPCION')}"
                   th:action="@{/examenes/{id}/pago(id=${seleccionado.id})}"
                   method="post">
 
