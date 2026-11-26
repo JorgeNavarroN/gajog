@@ -61,8 +61,8 @@ public class ExamenDatosIniciales implements ApplicationRunner {
 
         List<Cinturon> existentes = cinturonRepository.findAllByOrderByOrdenAsc();
         int siguienteOrden = existentes.stream()
-                .map(Cinturon::getOrden)
-                .max(Integer::compareTo)
+                .map(cinturon -> cinturon.getOrden())
+                .max((izquierda, derecha) -> izquierda.compareTo(derecha))
                 .orElse(0) + 1;
 
         for (CinturonBase base : CINTURONES) {
